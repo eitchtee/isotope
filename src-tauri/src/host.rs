@@ -137,6 +137,7 @@ fn app_webview_builder(handle: &AppHandle, app: &App) -> Result<WebviewBuilder<W
     let popup_id = app.id.clone();
 
     let mut builder = WebviewBuilder::new(app_label(&app.id), WebviewUrl::External(url))
+        .initialization_script(crate::bridge::init_script(app.notifications))
         .on_navigation(move |url| allow_navigation(&nav_handle, &nav_id, url.as_str()))
         .on_new_window(move |url, features| new_window(&popup_handle, &popup_id, url, features))
         .on_document_title_changed(|webview, title| {

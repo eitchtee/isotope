@@ -3,5 +3,29 @@
   "identifier": "shell",
   "description": "The Isotope shell UI (sidebar, folder panel, modals)",
   "webviews": ["shell"],
-  "permissions": ["core:default"]
+  "permissions": [
+    "core:default",
+    "allow-get-state",
+    "allow-take-pending-toasts",
+    "allow-activate-app",
+    "allow-toggle-folder-panel",
+    "allow-add-app",
+    "allow-update-app",
+    "allow-remove-app",
+    "allow-reload-app",
+    "allow-hibernate-app",
+    "allow-wake-app",
+    "allow-add-folder",
+    "allow-rename-folder",
+    "allow-remove-folder",
+    "allow-move-item",
+    "allow-add-profile",
+    "allow-rename-profile",
+    "allow-remove-profile",
+    "allow-set-default-hibernation-minutes",
+    "allow-set-overlay-open",
+    "allow-set-toast-visible",
+    "allow-app-icon",
+    "allow-set-app-icon"
+  ]
 }

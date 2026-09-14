@@ -1763,6 +1763,7 @@ dependencies = [
 name = "isotope"
 version = "0.1.0"
 dependencies = [
+ "base64 0.22.1",
  "isotope-core",
  "serde",
  "serde_json",

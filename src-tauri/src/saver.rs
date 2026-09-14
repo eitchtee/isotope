@@ -1,5 +1,5 @@
 use std::path::PathBuf;
-use std::sync::mpsc::{self, RecvTimeoutError, Sender};
+use std::sync::mpsc::{self, Sender};
 use std::thread;
 use std::time::Duration;
 
@@ -17,11 +17,9 @@ impl Saver {
         let (tx, rx) = mpsc::channel::<Config>();
         thread::spawn(move || {
             while let Ok(mut latest) = rx.recv() {
-                loop {
-                    match rx.recv_timeout(debounce) {
-                        Ok(newer) => latest = newer,
-                        Err(RecvTimeoutError::Timeout | RecvTimeoutError::Disconnected) => break,
-                    }
+                // Keep taking newer configs until the channel is quiet for `debounce`.
+                while let Ok(newer) = rx.recv_timeout(debounce) {
+                    latest = newer;
                 }
                 if let Err(e) = save(&path, &latest) {
                     on_error(e);

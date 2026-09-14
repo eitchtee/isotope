@@ -1,4 +1,7 @@
+pub mod bridge;
+pub mod commands;
 pub mod host;
+pub mod icons;
 pub mod layout;
 pub mod paths;
 pub mod saver;
@@ -47,6 +50,31 @@ pub fn run() {
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_notification::init())
+        .invoke_handler(tauri::generate_handler![
+            commands::get_state,
+            commands::take_pending_toasts,
+            commands::activate_app,
+            commands::toggle_folder_panel,
+            commands::add_app,
+            commands::update_app,
+            commands::remove_app,
+            commands::reload_app,
+            commands::hibernate_app,
+            commands::wake_app,
+            commands::add_folder,
+            commands::rename_folder,
+            commands::remove_folder,
+            commands::move_item,
+            commands::add_profile,
+            commands::rename_profile,
+            commands::remove_profile,
+            commands::set_default_hibernation_minutes,
+            commands::set_overlay_open,
+            commands::set_toast_visible,
+            commands::app_icon,
+            commands::set_app_icon,
+            bridge::bridge_notify,
+        ])
         .setup(|app| {
             let handle = app.handle().clone();
             let app_data = app.path().app_data_dir()?;
