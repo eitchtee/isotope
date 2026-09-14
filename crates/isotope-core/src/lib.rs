@@ -1,4 +1,5 @@
 pub mod badge;
+pub mod lifecycle;
 pub mod links;
 pub mod model;
 pub mod ops;
