@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
+use serde::Serialize;
+
 use crate::model::HibernationConfig;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -18,7 +20,8 @@ impl From<&HibernationConfig> for Policy {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(tag = "kind", content = "message", rename_all = "camelCase")]
 pub enum AppState {
     Hibernated,
     /// Webview exists but is hidden.

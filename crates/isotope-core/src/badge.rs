@@ -4,6 +4,16 @@ pub enum Badge {
     Dot,
 }
 
+/// Counts serialize as numbers, dots as the string "dot".
+impl serde::Serialize for Badge {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        match self {
+            Badge::Count(n) => serializer.serialize_u32(*n),
+            Badge::Dot => serializer.serialize_str("dot"),
+        }
+    }
+}
+
 impl Badge {
     pub fn label(self) -> String {
         match self {
