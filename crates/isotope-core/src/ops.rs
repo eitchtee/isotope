@@ -54,6 +54,14 @@ impl NewApp {
     }
 }
 
+/// Where an item is dropped: the top-level sidebar or inside a folder.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "camelCase")]
+pub enum Container {
+    Sidebar,
+    Folder { id: String },
+}
+
 fn validate_url(url: &str) -> Result<(), OpError> {
     match Url::parse(url) {
         Ok(u) if u.scheme() == "http" || u.scheme() == "https" => Ok(()),
@@ -121,6 +129,112 @@ impl Config {
         self.detach_app(id);
         if self.settings.last_active_app_id.as_deref() == Some(id) {
             self.settings.last_active_app_id = None;
+        }
+        Ok(())
+    }
+
+    /// Creates a folder containing `app_ids` (duplicates ignored). The folder takes
+    /// the sidebar slot of the first app if that app is top-level; otherwise it is
+    /// appended. Apps are moved out of wherever they were.
+    pub fn add_folder(&mut self, name: &str, app_ids: &[String]) -> Result<String, OpError> {
+        let mut unique: Vec<String> = Vec::new();
+        for id in app_ids {
+            if self.app(id).is_none() {
+                return Err(OpError::AppNotFound(id.clone()));
+            }
+            if !unique.contains(id) {
+                unique.push(id.clone());
+            }
+        }
+
+        let id = Uuid::new_v4().to_string();
+        let folder_item = SidebarItem::Folder { id: id.clone() };
+        let slot = unique
+            .first()
+            .and_then(|first| self.sidebar.iter().position(|i| is_app_item(i, first)));
+        match slot {
+            Some(i) => self.sidebar[i] = folder_item,
+            None => self.sidebar.push(folder_item),
+        }
+        for app_id in &unique {
+            self.detach_app(app_id);
+        }
+        self.folders.push(Folder { id: id.clone(), name: name.into(), icon: None, app_ids: unique });
+        Ok(id)
+    }
+
+    pub fn rename_folder(&mut self, id: &str, name: &str) -> Result<(), OpError> {
+        let folder = self
+            .folders
+            .iter_mut()
+            .find(|f| f.id == id)
+            .ok_or_else(|| OpError::FolderNotFound(id.into()))?;
+        folder.name = name.into();
+        Ok(())
+    }
+
+    /// Deletes a folder; its apps return to the top-level sidebar at the folder's position.
+    pub fn remove_folder(&mut self, id: &str) -> Result<(), OpError> {
+        let pos = self
+            .folders
+            .iter()
+            .position(|f| f.id == id)
+            .ok_or_else(|| OpError::FolderNotFound(id.into()))?;
+        let folder = self.folders.remove(pos);
+        let slot = match self.sidebar.iter().position(|i| is_folder_item(i, id)) {
+            Some(i) => {
+                self.sidebar.remove(i);
+                i
+            }
+            None => self.sidebar.len(),
+        };
+        for (offset, app_id) in folder.app_ids.into_iter().enumerate() {
+            self.sidebar.insert(slot + offset, SidebarItem::App { id: app_id });
+        }
+        Ok(())
+    }
+
+    /// Moves an item to `index` within `target`. `index` is the position after the
+    /// item is removed from its current place, clamped to the end of the target list.
+    pub fn move_item(&mut self, item: &SidebarItem, target: &Container, index: usize) -> Result<(), OpError> {
+        if let Container::Folder { id } = target
+            && self.folder(id).is_none()
+        {
+            return Err(OpError::FolderNotFound(id.clone()));
+        }
+        match item {
+            SidebarItem::App { id } => {
+                if self.app(id).is_none() {
+                    return Err(OpError::AppNotFound(id.clone()));
+                }
+                self.detach_app(id);
+                match target {
+                    Container::Sidebar => {
+                        let at = index.min(self.sidebar.len());
+                        self.sidebar.insert(at, item.clone());
+                    }
+                    Container::Folder { id: folder_id } => {
+                        let folder = self
+                            .folders
+                            .iter_mut()
+                            .find(|f| f.id == *folder_id)
+                            .expect("folder existence checked above");
+                        let at = index.min(folder.app_ids.len());
+                        folder.app_ids.insert(at, id.clone());
+                    }
+                }
+            }
+            SidebarItem::Folder { id } => {
+                if !matches!(target, Container::Sidebar) {
+                    return Err(OpError::NestedFolder);
+                }
+                if self.folder(id).is_none() {
+                    return Err(OpError::FolderNotFound(id.clone()));
+                }
+                self.sidebar.retain(|i| !is_folder_item(i, id));
+                let at = index.min(self.sidebar.len());
+                self.sidebar.insert(at, item.clone());
+            }
         }
         Ok(())
     }
