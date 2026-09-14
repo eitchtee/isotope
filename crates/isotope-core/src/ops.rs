@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use url::Url;
 use uuid::Uuid;
 
-use crate::model::{App, Config, Folder, HibernationConfig, SidebarItem, DEFAULT_PROFILE_ID};
+use crate::model::{App, Config, Folder, HibernationConfig, Profile, SidebarItem, DEFAULT_PROFILE_ID};
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum OpError {
@@ -236,6 +236,38 @@ impl Config {
                 self.sidebar.insert(at, item.clone());
             }
         }
+        Ok(())
+    }
+
+    pub fn add_profile(&mut self, name: &str) -> String {
+        let id = Uuid::new_v4().to_string();
+        self.profiles.push(Profile { id: id.clone(), name: name.into() });
+        id
+    }
+
+    pub fn rename_profile(&mut self, id: &str, name: &str) -> Result<(), OpError> {
+        let profile = self
+            .profiles
+            .iter_mut()
+            .find(|p| p.id == id)
+            .ok_or_else(|| OpError::ProfileNotFound(id.into()))?;
+        profile.name = name.into();
+        Ok(())
+    }
+
+    pub fn remove_profile(&mut self, id: &str) -> Result<(), OpError> {
+        if id == DEFAULT_PROFILE_ID {
+            return Err(OpError::DefaultProfile);
+        }
+        let pos = self
+            .profiles
+            .iter()
+            .position(|p| p.id == id)
+            .ok_or_else(|| OpError::ProfileNotFound(id.into()))?;
+        if self.apps.iter().any(|a| a.profile_id == id) {
+            return Err(OpError::ProfileInUse(id.into()));
+        }
+        self.profiles.remove(pos);
         Ok(())
     }
 
