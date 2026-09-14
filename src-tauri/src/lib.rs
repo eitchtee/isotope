@@ -1,3 +1,7 @@
+pub mod layout;
+pub mod paths;
+pub mod saver;
+
 use tauri::window::Color;
 use tauri::{LogicalPosition, LogicalSize, Manager, WebviewBuilder, WebviewUrl, Window, WindowBuilder, WindowEvent};
 
