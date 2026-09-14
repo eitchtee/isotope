@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-take-pending-toasts"
+description = "Enables the take_pending_toasts command without any pre-configured scope."
+commands.allow = ["take_pending_toasts"]
+
+[[permission]]
+identifier = "deny-take-pending-toasts"
+description = "Denies the take_pending_toasts command without any pre-configured scope."
+commands.deny = ["take_pending_toasts"]

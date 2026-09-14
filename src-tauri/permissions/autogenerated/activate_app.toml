@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-activate-app"
+description = "Enables the activate_app command without any pre-configured scope."
+commands.allow = ["activate_app"]
+
+[[permission]]
+identifier = "deny-activate-app"
+description = "Denies the activate_app command without any pre-configured scope."
+commands.deny = ["activate_app"]

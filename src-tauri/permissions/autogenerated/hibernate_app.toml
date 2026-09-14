@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-hibernate-app"
+description = "Enables the hibernate_app command without any pre-configured scope."
+commands.allow = ["hibernate_app"]
+
+[[permission]]
+identifier = "deny-hibernate-app"
+description = "Denies the hibernate_app command without any pre-configured scope."
+commands.deny = ["hibernate_app"]
