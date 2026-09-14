@@ -1,0 +1,27 @@
+[package]
+name = "isotope"
+version = "0.1.0"
+description = "A browser for containerized web apps"
+edition = "2024"
+
+[lib]
+# The `_lib` suffix avoids a bin/lib name clash on Windows (rust-lang/cargo#8519).
+name = "isotope_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+isotope-core = { path = "../crates/isotope-core" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tauri = { version = "2.11", features = ["unstable"] }
+tauri-plugin-notification = "2"
+tauri-plugin-opener = "2"
+ureq = "3"
+url = "2"
+uuid = { version = "1", features = ["v5"] }
+
+[dev-dependencies]
+tempfile = "3"
