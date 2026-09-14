@@ -1,3 +1,4 @@
+pub mod badge;
 pub mod links;
 pub mod model;
 pub mod ops;
