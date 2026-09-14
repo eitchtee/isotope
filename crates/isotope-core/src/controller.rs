@@ -3,10 +3,11 @@ use std::time::{Duration, Instant};
 
 use serde::Serialize;
 
-use crate::badge::Badge;
+use crate::badge::{parse_badge, Badge};
 use crate::lifecycle::{AppState, Effect, Lifecycle, Policy};
+use crate::limits::{truncate_chars, RateLimiter, NOTIFY_BODY_MAX, NOTIFY_TITLE_MAX, PAGE_TITLE_MAX};
 use crate::model::{Config, SidebarItem};
-use crate::ops::OpError;
+use crate::ops::{Container, NewApp, OpError};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(tag = "level", content = "message", rename_all = "camelCase")]
@@ -80,6 +81,7 @@ pub struct Controller {
     folder_panel: Option<String>,
     overlay_open: bool,
     toast_visible: bool,
+    limiter: RateLimiter,
 }
 
 fn policy(config: &Config, id: &str) -> Policy {
@@ -119,6 +121,7 @@ impl Controller {
             folder_panel: None,
             overlay_open: false,
             toast_visible: false,
+            limiter: RateLimiter::notifications(),
         }
     }
 
@@ -251,5 +254,118 @@ impl Controller {
     pub fn set_toast_visible(&mut self, visible: bool) -> Outcome {
         self.toast_visible = visible;
         Outcome { layout: true, ..Outcome::default() }
+    }
+
+    pub fn add_app(&mut self, input: NewApp, now: Instant) -> Result<(String, Outcome), OpError> {
+        let id = self.config.add_app(input)?;
+        let mut out = self.activate(&id, now)?;
+        out.save = true;
+        Ok((id, out))
+    }
+
+    pub fn update_app(&mut self, id: &str, input: NewApp) -> Result<Outcome, OpError> {
+        let recreate = self.config.update_app(id, input)?;
+        let effects = if recreate { self.lifecycle.recreate(id) } else { Vec::new() };
+        if self.config.app(id).is_some_and(|app| !app.badges) {
+            self.badges.remove(id);
+        }
+        Ok(Outcome { effects, changed: true, save: true, layout: recreate, ..Outcome::default() })
+    }
+
+    pub fn remove_app(&mut self, id: &str) -> Result<Outcome, OpError> {
+        self.config.remove_app(id)?;
+        let effects = self.lifecycle.remove(id);
+        self.badges.remove(id);
+        Ok(Outcome { effects, ..self.structure_changed() })
+    }
+
+    pub fn add_folder(&mut self, name: &str, app_ids: &[String]) -> Result<(String, Outcome), OpError> {
+        let id = self.config.add_folder(name, app_ids)?;
+        Ok((id, self.structure_changed()))
+    }
+
+    pub fn rename_folder(&mut self, id: &str, name: &str) -> Result<Outcome, OpError> {
+        self.config.rename_folder(id, name)?;
+        Ok(self.structure_changed())
+    }
+
+    pub fn remove_folder(&mut self, id: &str) -> Result<Outcome, OpError> {
+        self.config.remove_folder(id)?;
+        Ok(self.structure_changed())
+    }
+
+    pub fn move_item(&mut self, item: &SidebarItem, target: &Container, index: usize) -> Result<Outcome, OpError> {
+        self.config.move_item(item, target, index)?;
+        Ok(self.structure_changed())
+    }
+
+    pub fn add_profile(&mut self, name: &str) -> (String, Outcome) {
+        let id = self.config.add_profile(name);
+        (id, Outcome { changed: true, save: true, ..Outcome::default() })
+    }
+
+    pub fn rename_profile(&mut self, id: &str, name: &str) -> Result<Outcome, OpError> {
+        self.config.rename_profile(id, name)?;
+        Ok(Outcome { changed: true, save: true, ..Outcome::default() })
+    }
+
+    pub fn remove_profile(&mut self, id: &str) -> Result<Outcome, OpError> {
+        self.config.remove_profile(id)?;
+        Ok(Outcome { changed: true, save: true, delete_profile_data: Some(id.into()), ..Outcome::default() })
+    }
+
+    pub fn set_default_hibernation_minutes(&mut self, minutes: u32) -> Outcome {
+        self.config.settings.default_hibernation_minutes = minutes.max(1);
+        Outcome { changed: true, save: true, ..Outcome::default() }
+    }
+
+    pub fn set_icon(&mut self, id: &str, icon: Option<String>) -> Result<Outcome, OpError> {
+        let app = self
+            .config
+            .apps
+            .iter_mut()
+            .find(|a| a.id == id)
+            .ok_or_else(|| OpError::AppNotFound(id.into()))?;
+        app.icon = icon;
+        Ok(Outcome { changed: true, save: true, ..Outcome::default() })
+    }
+
+    /// Updates the app's unread badge from its page title (spec §4.5).
+    pub fn page_title(&mut self, id: &str, title: &str) -> Outcome {
+        let Some(app) = self.config.app(id) else {
+            return Outcome::default();
+        };
+        let badge = if app.badges { parse_badge(&truncate_chars(title, PAGE_TITLE_MAX)) } else { None };
+        let previous = match badge {
+            Some(b) => self.badges.insert(id.into(), b),
+            None => self.badges.remove(id),
+        };
+        Outcome { changed: previous != badge, ..Outcome::default() }
+    }
+
+    /// Turns a web Notification into an OS notification request (spec §4.6).
+    pub fn notify(&mut self, id: &str, title: &str, body: &str, now: Instant) -> Outcome {
+        let Some(app) = self.config.app(id) else {
+            return Outcome::default();
+        };
+        if !app.notifications || !self.limiter.allow(id, now) {
+            return Outcome::default();
+        }
+        let notification = Notification {
+            app_id: id.into(),
+            title: format!("{}: {}", app.name, truncate_chars(title, NOTIFY_TITLE_MAX)),
+            body: truncate_chars(body, NOTIFY_BODY_MAX),
+        };
+        Outcome { notification: Some(notification), ..Outcome::default() }
+    }
+
+    /// Sidebar structure changed: close the folder panel if its folder is gone.
+    fn structure_changed(&mut self) -> Outcome {
+        if let Some(folder) = &self.folder_panel
+            && self.config.folder(folder).is_none()
+        {
+            self.folder_panel = None;
+        }
+        Outcome { changed: true, save: true, layout: true, ..Outcome::default() }
     }
 }
