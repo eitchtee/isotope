@@ -73,6 +73,7 @@ pub fn run() {
             commands::set_toast_visible,
             commands::app_icon,
             commands::set_app_icon,
+            commands::refetch_app_icon,
             bridge::bridge_notify,
         ])
         .setup(|app| {

@@ -9,11 +9,12 @@ afterEach(() => clearMocks());
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 
-function setup(options: { edit?: boolean; failWith?: string } = {}) {
+function setup(options: { edit?: boolean; failWith?: string; refetchFails?: string } = {}) {
   const calls: [string, any][] = [];
   mockIPC((cmd, args) => {
     calls.push([cmd, args]);
     if (options.failWith && (cmd === "add_app" || cmd === "update_app")) throw options.failWith;
+    if (options.refetchFails && cmd === "refetch_app_icon") throw options.refetchFails;
     if (cmd === "add_app") return "new-id";
     return null;
   });
@@ -24,8 +25,40 @@ function setup(options: { edit?: boolean; failWith?: string } = {}) {
   store.snapshot = s;
   const onclose = vi.fn();
   const view = render(AppModal, { store, app: options.edit ? s.config.apps[0] : undefined, onclose });
-  return { calls, onclose, view };
+  return { calls, onclose, view, store };
 }
+
+test("refetching the icon is only offered when editing", () => {
+  setup();
+  expect(screen.queryByRole("button", { name: "Refetch icon" })).toBeNull();
+});
+
+test("refetch calls Rust and reports success", async () => {
+  const { calls } = setup({ edit: true });
+  await fireEvent.click(screen.getByRole("button", { name: "Refetch icon" }));
+  await flush();
+
+  expect(calls).toContainEqual(["refetch_app_icon", { id: "a" }]);
+  expect(screen.getByRole("status")).toHaveTextContent("Icon updated");
+});
+
+test("refetch failures are shown", async () => {
+  setup({ edit: true, refetchFails: "no icon found" });
+  await fireEvent.click(screen.getByRole("button", { name: "Refetch icon" }));
+  await flush();
+
+  expect(screen.getByRole("status")).toHaveTextContent("Couldn't fetch an icon: no icon found");
+});
+
+test("saving after the icon changed keeps the new icon", async () => {
+  const { calls, store } = setup({ edit: true });
+  store.snapshot!.config.apps[0].icon = "icons/a.png#8";
+
+  await fireEvent.click(screen.getByRole("button", { name: "Save" }));
+  await flush();
+
+  expect(calls.find(([cmd]) => cmd === "update_app")?.[1].input.icon).toBe("icons/a.png#8");
+});
 
 test("hides the app webview while open", async () => {
   const { calls, view } = setup();

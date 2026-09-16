@@ -16,6 +16,7 @@ test("commands use the Rust names and camelCase argument keys", async () => {
   expect(await api.addFolder("Work", ["a"])).toBe("f1");
   await api.setAppIcon("a", [1, 2, 3]);
   await api.setDefaultHibernationMinutes(15);
+  await api.refetchAppIcon("a");
 
   expect(calls).toEqual([
     ["toggle_folder_panel", { folderId: "f1" }],
@@ -23,5 +24,6 @@ test("commands use the Rust names and camelCase argument keys", async () => {
     ["add_folder", { name: "Work", appIds: ["a"] }],
     ["set_app_icon", { id: "a", bytes: [1, 2, 3] }],
     ["set_default_hibernation_minutes", { minutes: 15 }],
+    ["refetch_app_icon", { id: "a" }],
   ]);
 });

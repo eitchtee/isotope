@@ -23,6 +23,7 @@ const COMMANDS: &[&str] = &[
     "set_toast_visible",
     "app_icon",
     "set_app_icon",
+    "refetch_app_icon",
     "bridge_notify",
 ];
 

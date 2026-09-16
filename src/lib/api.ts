@@ -27,6 +27,7 @@ export const api = {
   setToastVisible: (visible: boolean) => invoke<void>("set_toast_visible", { visible }),
   appIcon: (id: string) => invoke<string | null>("app_icon", { id }),
   setAppIcon: (id: string, bytes: number[]) => invoke<void>("set_app_icon", { id, bytes }),
+  refetchAppIcon: (id: string) => invoke<void>("refetch_app_icon", { id }),
 };
 
 export function onStateChanged(callback: (snapshot: Snapshot) => void): Promise<UnlistenFn> {

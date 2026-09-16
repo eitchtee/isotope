@@ -22,9 +22,27 @@
   let failure = $state<string | null>(null);
   let iconFile = $state<File | null>(null);
   let saving = $state(false);
+  let refetching = $state(false);
+  let iconStatus = $state<{ message: string; error: boolean } | null>(null);
+
+  async function refetchIcon() {
+    if (!app) return;
+    refetching = true;
+    iconStatus = null;
+    try {
+      await api.refetchAppIcon(app.id);
+      iconStatus = { message: "Icon updated", error: false };
+    } catch (error) {
+      iconStatus = { message: `Couldn't fetch an icon: ${error}`, error: true };
+    } finally {
+      refetching = false;
+    }
+  }
 
   async function save() {
-    const result = validateAppForm(form, app?.icon ?? null);
+    // Send the icon Rust currently has: it may have changed (refetch, background download) since the modal opened.
+    const currentIcon = app ? (store.app(app.id) ?? app).icon : null;
+    const result = validateAppForm(form, currentIcon);
     errors = result.errors;
     if (!result.input) return;
     saving = true;
@@ -83,7 +101,17 @@
         accept="image/png,image/x-icon,image/jpeg,image/gif,image/webp"
         onchange={(e) => (iconFile = (e.currentTarget as HTMLInputElement).files?.[0] ?? null)}
       />
-      <small>Leave empty to use the site's favicon.</small>
+      <small>Leave empty to use the site's icon.</small>
+      {#if app}
+        <div class="icon-actions">
+          <button type="button" class="secondary" onclick={refetchIcon} disabled={refetching}>
+            {refetching ? "Fetching icon…" : "Refetch icon"}
+          </button>
+          {#if iconStatus}
+            <small class:error={iconStatus.error} role="status">{iconStatus.message}</small>
+          {/if}
+        </div>
+      {/if}
     </div>
 
     <div class="field">
@@ -148,6 +176,12 @@
     flex-direction: column;
     gap: 4px;
     font-size: 13px;
+  }
+  .icon-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 2px;
   }
   label.check {
     font-size: 13px;

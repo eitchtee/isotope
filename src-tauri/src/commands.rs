@@ -49,7 +49,7 @@ pub async fn add_app(app: AppHandle, input: NewApp) -> Result<String, String> {
     if let Some(url) = fetch_from {
         let (handle, app_id) = (app.clone(), id.clone());
         std::thread::spawn(move || {
-            if let Ok(bytes) = icons::fetch_favicon(&url) {
+            if let Ok(bytes) = icons::fetch_icon(&url) {
                 let _ = store_icon(&handle, &app_id, &bytes);
             }
         });
@@ -158,8 +158,19 @@ pub async fn app_icon(app: AppHandle, id: String) -> Option<String> {
 #[tauri::command]
 pub async fn set_app_icon(app: AppHandle, id: String, bytes: Vec<u8>) -> Result<(), String> {
     if bytes.len() as u64 > icons::MAX_ICON_BYTES || icons::sniff_mime(&bytes).is_none() {
-        return Err("Icon must be a PNG, ICO, JPEG, GIF or WebP image up to 1 MB".into());
+        return Err("Icon must be a PNG, ICO, JPEG, GIF, WebP or SVG image up to 1 MB".into());
     }
+    store_icon(&app, &id, &bytes)
+}
+
+/// Downloads the app's icon again from its site (declared `<link>` icons, then /favicon.ico).
+#[tauri::command]
+pub async fn refetch_app_icon(app: AppHandle, id: String) -> Result<(), String> {
+    let url = with_controller(&app, |c| c.config().app(&id).map(|a| a.url.clone()))
+        .ok_or_else(|| format!("app not found: {id}"))?;
+    let bytes = tauri::async_runtime::spawn_blocking(move || icons::fetch_icon(&url))
+        .await
+        .map_err(|e| e.to_string())??;
     store_icon(&app, &id, &bytes)
 }
 

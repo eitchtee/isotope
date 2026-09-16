@@ -26,6 +26,7 @@
     "allow-set-overlay-open",
     "allow-set-toast-visible",
     "allow-app-icon",
-    "allow-set-app-icon"
+    "allow-set-app-icon",
+    "allow-refetch-app-icon"
   ]
 }
