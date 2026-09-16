@@ -34,7 +34,7 @@ export function appMenuEntries(
   return [
     { text: "Reload", action: actions.reload, enabled: live },
     { text: "Hibernate now", action: actions.hibernate, enabled: live },
-    { text: "Wake without switching", action: actions.wake, enabled: !live },
+    { text: "Wake", action: actions.wake, enabled: !live },
     "separator",
     { text: muted ? "Unmute" : "Mute", action: actions.toggleMute, enabled: live },
     "separator",

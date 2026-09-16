@@ -19,7 +19,7 @@ test("live apps can reload, hibernate and mute but not wake", () => {
   expect(texts(appMenuEntries(app("a"), { kind: "running" }, false, actions()))).toEqual([
     "Reload",
     "Hibernate now",
-    "Wake without switching (disabled)",
+    "Wake (disabled)",
     "---",
     "Mute",
     "---",
@@ -39,7 +39,7 @@ test("hibernated and failed apps can only be woken", () => {
     expect(texts(appMenuEntries(app("a"), status, false, actions())).slice(0, 5)).toEqual([
       "Reload (disabled)",
       "Hibernate now (disabled)",
-      "Wake without switching",
+      "Wake",
       "---",
       "Mute (disabled)",
     ]);
