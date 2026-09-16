@@ -73,10 +73,14 @@ pub async fn remove_app(app: AppHandle, id: String) -> Result<(), String> {
     Ok(())
 }
 
+/// Reloads the app from its configured URL, not the page it's currently on.
 #[tauri::command]
 pub async fn reload_app(app: AppHandle, id: String) -> Result<(), String> {
+    let url = with_controller(&app, |c| c.config().app(&id).map(|a| a.url.clone()))
+        .ok_or_else(|| format!("app not found: {id}"))?;
+    let url: tauri::Url = url.parse().map_err(|e| format!("invalid URL {url}: {e}"))?;
     match app.get_webview(&app_label(&id)) {
-        Some(webview) => webview.reload().map_err(|e| e.to_string()),
+        Some(webview) => webview.navigate(url).map_err(|e| e.to_string()),
         None => Ok(()),
     }
 }
