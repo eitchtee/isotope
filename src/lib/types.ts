@@ -29,7 +29,14 @@ export type SidebarItem = { type: "app"; id: string } | { type: "folder"; id: st
 
 export type Container = { type: "sidebar" } | { type: "folder"; id: string };
 
-export type Settings = { defaultHibernationMinutes: number; lastActiveAppId: string | null };
+/** fixed: "Isotope"; appName: "<app name> - Isotope"; pageTitle: "<page title> - Isotope". */
+export type WindowTitleMode = "fixed" | "appName" | "pageTitle";
+
+export type Settings = {
+  defaultHibernationMinutes: number;
+  lastActiveAppId: string | null;
+  windowTitle: WindowTitleMode;
+};
 
 export type Config = {
   version: number;

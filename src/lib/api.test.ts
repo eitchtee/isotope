@@ -17,6 +17,7 @@ test("commands use the Rust names and camelCase argument keys", async () => {
   await api.setAppIcon("a", [1, 2, 3]);
   await api.setDefaultHibernationMinutes(15);
   await api.refetchAppIcon("a");
+  await api.setWindowTitleMode("pageTitle");
 
   expect(calls).toEqual([
     ["toggle_folder_panel", { folderId: "f1" }],
@@ -25,5 +26,6 @@ test("commands use the Rust names and camelCase argument keys", async () => {
     ["set_app_icon", { id: "a", bytes: [1, 2, 3] }],
     ["set_default_hibernation_minutes", { minutes: 15 }],
     ["refetch_app_icon", { id: "a" }],
+    ["set_window_title_mode", { mode: "pageTitle" }],
   ]);
 });

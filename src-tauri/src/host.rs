@@ -3,11 +3,11 @@ use std::sync::Mutex;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 
-use isotope_core::controller::{Controller, Outcome, Toast};
+use isotope_core::controller::{is_placeholder_title, Controller, Outcome, Toast};
 use isotope_core::lifecycle::Effect;
 use isotope_core::links::{classify, LinkTarget};
 use isotope_core::model::App;
-use tauri::webview::{NewWindowFeatures, NewWindowResponse};
+use tauri::webview::{NewWindowFeatures, NewWindowResponse, PageLoadEvent};
 use tauri::{
     AppHandle, Emitter, LogicalPosition, LogicalSize, Manager, Url, WebviewBuilder, WebviewUrl, WebviewWindow,
     WebviewWindowBuilder, Wry,
@@ -85,6 +85,17 @@ pub fn apply(handle: &AppHandle, outcome: Outcome) {
         let snapshot = with_controller(handle, |c| c.snapshot());
         let _ = handle.emit_to("shell", "state-changed", snapshot);
     }
+    update_window_title(handle);
+}
+
+/// Sets the main window title from the window title setting, only when it differs.
+pub fn update_window_title(handle: &AppHandle) {
+    let title = with_controller(handle, |c| c.window_title());
+    if let Some(window) = handle.get_window("main")
+        && window.title().ok().as_deref() != Some(title.as_str())
+    {
+        let _ = window.set_title(&title);
+    }
 }
 
 pub fn emit_toast(handle: &AppHandle, toast: Toast) {
@@ -142,9 +153,21 @@ fn app_webview_builder(handle: &AppHandle, app: &App) -> Result<WebviewBuilder<W
         .on_new_window(move |url, features| new_window(&popup_handle, &popup_id, url, features))
         .on_document_title_changed(|webview, title| {
             let Some(app_id) = webview.label().strip_prefix("app-") else { return };
+            // While loading, engines report the URL as the title; treat that as "no title yet".
+            let url = webview.url().map(|u| u.to_string()).unwrap_or_default();
+            let title = if is_placeholder_title(&title, &url) { String::new() } else { title };
             let handle = webview.app_handle().clone();
             let outcome = with_controller(&handle, |c| c.page_title(app_id, &title));
             apply(&handle, outcome);
+        })
+        .on_page_load(|webview, payload| {
+            if !matches!(payload.event(), PageLoadEvent::Started) {
+                return;
+            }
+            let Some(app_id) = webview.label().strip_prefix("app-") else { return };
+            let handle = webview.app_handle().clone();
+            with_controller(&handle, |c| c.page_loading(app_id));
+            update_window_title(&handle);
         });
     if let Some(user_agent) = &app.user_agent {
         builder = builder.user_agent(user_agent);

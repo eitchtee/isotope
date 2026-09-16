@@ -31,6 +31,14 @@ fn serializes_camel_case_and_tagged_sidebar_items() {
 }
 
 #[test]
+fn settings_without_window_title_default_to_fixed() {
+    let s: Settings = serde_json::from_str(r#"{ "defaultHibernationMinutes": 5, "lastActiveAppId": null }"#).unwrap();
+    assert_eq!(s.window_title, WindowTitleMode::Fixed);
+    assert_eq!(serde_json::to_value(WindowTitleMode::PageTitle).unwrap(), "pageTitle");
+    assert_eq!(serde_json::to_value(WindowTitleMode::AppName).unwrap(), "appName");
+}
+
+#[test]
 fn parses_and_round_trips_the_spec_example() {
     let text = r#"{
       "version": 1,

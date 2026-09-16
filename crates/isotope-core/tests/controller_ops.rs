@@ -4,9 +4,9 @@ use std::time::{Duration, Instant};
 
 use common::new_app;
 use isotope_core::badge::Badge;
-use isotope_core::controller::{Controller, Notification};
+use isotope_core::controller::{is_placeholder_title, Controller, Notification};
 use isotope_core::lifecycle::Effect;
-use isotope_core::model::{Config, SidebarItem};
+use isotope_core::model::{Config, SidebarItem, WindowTitleMode};
 use isotope_core::ops::{Container, OpError};
 
 /// Started controller with top-level apps A and B; A is active. Returns ids [A, B].
@@ -182,6 +182,49 @@ fn notify_respects_the_app_setting() {
     c.update_app(&ids[1], input).unwrap();
     assert!(c.notify(&ids[1], "x", "y", now).notification.is_none());
     assert!(c.notify("unknown", "x", "y", now).notification.is_none());
+}
+
+#[test]
+fn window_title_follows_the_mode_and_active_app() {
+    let (mut c, ids, _) = started();
+    assert_eq!(c.window_title(), "Isotope");
+
+    assert!(c.set_window_title_mode(WindowTitleMode::AppName).save);
+    assert_eq!(c.window_title(), "A - Isotope");
+
+    c.set_window_title_mode(WindowTitleMode::PageTitle);
+    assert_eq!(c.window_title(), "A - Isotope");
+    c.page_title(&ids[0], "(2) Inbox");
+    assert_eq!(c.window_title(), "(2) Inbox - Isotope");
+    c.page_title(&ids[1], "Other app");
+    assert_eq!(c.window_title(), "(2) Inbox - Isotope");
+
+    c.page_loading(&ids[0]);
+    assert_eq!(c.window_title(), "A - Isotope");
+    c.page_title(&ids[0], "   ");
+    assert_eq!(c.window_title(), "A - Isotope");
+
+    c.page_title(&ids[0], "Inbox");
+    c.hibernate(&ids[0]).unwrap();
+    assert_eq!(c.window_title(), "Isotope");
+}
+
+#[test]
+fn switching_apps_uses_the_new_apps_title() {
+    let (mut c, ids, now) = started();
+    c.set_window_title_mode(WindowTitleMode::PageTitle);
+    c.page_title(&ids[1], "Chat");
+    c.activate(&ids[1], now).unwrap();
+    assert_eq!(c.window_title(), "Chat - Isotope");
+}
+
+#[test]
+fn placeholder_titles_are_detected() {
+    assert!(is_placeholder_title("", "https://x.com/"));
+    assert!(is_placeholder_title("httpbin.org/cookies", "https://httpbin.org/cookies"));
+    assert!(is_placeholder_title("mail.google.com/", "https://mail.google.com/"));
+    assert!(is_placeholder_title("https://x.com/a", "https://x.com/a"));
+    assert!(!is_placeholder_title("Inbox", "https://mail.google.com/"));
 }
 
 #[test]

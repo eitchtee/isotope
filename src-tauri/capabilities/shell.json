@@ -23,6 +23,7 @@
     "allow-rename-profile",
     "allow-remove-profile",
     "allow-set-default-hibernation-minutes",
+    "allow-set-window-title-mode",
     "allow-set-overlay-open",
     "allow-set-toast-visible",
     "allow-app-icon",

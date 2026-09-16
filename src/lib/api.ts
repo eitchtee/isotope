@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import type { Container, NewApp, SidebarItem, Snapshot, Toast } from "./types";
+import type { Container, NewApp, SidebarItem, Snapshot, Toast, WindowTitleMode } from "./types";
 
 export const api = {
   getState: () => invoke<Snapshot>("get_state"),
@@ -23,6 +23,7 @@ export const api = {
   removeProfile: (id: string) => invoke<void>("remove_profile", { id }),
   setDefaultHibernationMinutes: (minutes: number) =>
     invoke<void>("set_default_hibernation_minutes", { minutes }),
+  setWindowTitleMode: (mode: WindowTitleMode) => invoke<void>("set_window_title_mode", { mode }),
   setOverlayOpen: (open: boolean) => invoke<void>("set_overlay_open", { open }),
   setToastVisible: (visible: boolean) => invoke<void>("set_toast_visible", { visible }),
   appIcon: (id: string) => invoke<string | null>("app_icon", { id }),

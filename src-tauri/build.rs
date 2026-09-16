@@ -19,6 +19,7 @@ const COMMANDS: &[&str] = &[
     "rename_profile",
     "remove_profile",
     "set_default_hibernation_minutes",
+    "set_window_title_mode",
     "set_overlay_open",
     "set_toast_visible",
     "app_icon",

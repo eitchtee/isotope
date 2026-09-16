@@ -69,6 +69,7 @@ pub fn run() {
             commands::rename_profile,
             commands::remove_profile,
             commands::set_default_hibernation_minutes,
+            commands::set_window_title_mode,
             commands::set_overlay_open,
             commands::set_toast_visible,
             commands::app_icon,

@@ -6,7 +6,19 @@ use serde::Serialize;
 use crate::badge::{parse_badge, Badge};
 use crate::lifecycle::{AppState, Effect, Lifecycle, Policy};
 use crate::limits::{truncate_chars, RateLimiter, NOTIFY_BODY_MAX, NOTIFY_TITLE_MAX, PAGE_TITLE_MAX};
-use crate::model::{Config, SidebarItem};
+use crate::model::{Config, SidebarItem, WindowTitleMode};
+
+pub const APP_TITLE: &str = "Isotope";
+
+/// Engines report the page URL as its title until the page sets one.
+pub fn is_placeholder_title(title: &str, url: &str) -> bool {
+    let title = title.trim().trim_end_matches('/');
+    if title.is_empty() {
+        return true;
+    }
+    let without_scheme = url.split_once("://").map_or(url, |(_, rest)| rest);
+    title == url.trim_end_matches('/') || title == without_scheme.trim_end_matches('/')
+}
 use crate::ops::{Container, NewApp, OpError};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -82,6 +94,8 @@ pub struct Controller {
     overlay_open: bool,
     toast_visible: bool,
     limiter: RateLimiter,
+    /// Latest real page title per live app (placeholders are stored as empty).
+    titles: HashMap<String, String>,
 }
 
 fn policy(config: &Config, id: &str) -> Policy {
@@ -122,6 +136,7 @@ impl Controller {
             overlay_open: false,
             toast_visible: false,
             limiter: RateLimiter::notifications(),
+            titles: HashMap::new(),
         }
     }
 
@@ -220,6 +235,7 @@ impl Controller {
         }
         let effects = self.lifecycle.hibernate(id);
         self.badges.remove(id);
+        self.titles.remove(id);
         Ok(Outcome { effects, changed: true, layout: true, ..Outcome::default() })
     }
 
@@ -236,6 +252,7 @@ impl Controller {
         for effect in &effects {
             if let Effect::Destroy(id) = effect {
                 self.badges.remove(id);
+                self.titles.remove(id);
             }
         }
         Outcome { changed: !effects.is_empty(), effects, ..Outcome::default() }
@@ -266,6 +283,9 @@ impl Controller {
     pub fn update_app(&mut self, id: &str, input: NewApp) -> Result<Outcome, OpError> {
         let recreate = self.config.update_app(id, input)?;
         let effects = if recreate { self.lifecycle.recreate(id) } else { Vec::new() };
+        if recreate {
+            self.titles.remove(id);
+        }
         if self.config.app(id).is_some_and(|app| !app.badges) {
             self.badges.remove(id);
         }
@@ -276,6 +296,7 @@ impl Controller {
         self.config.remove_app(id)?;
         let effects = self.lifecycle.remove(id);
         self.badges.remove(id);
+        self.titles.remove(id);
         Ok(Outcome { effects, ..self.structure_changed() })
     }
 
@@ -335,12 +356,42 @@ impl Controller {
         let Some(app) = self.config.app(id) else {
             return Outcome::default();
         };
-        let badge = if app.badges { parse_badge(&truncate_chars(title, PAGE_TITLE_MAX)) } else { None };
+        let title = truncate_chars(title, PAGE_TITLE_MAX);
+        let badge = if app.badges { parse_badge(&title) } else { None };
+        self.titles.insert(id.into(), title);
         let previous = match badge {
             Some(b) => self.badges.insert(id.into(), b),
             None => self.badges.remove(id),
         };
         Outcome { changed: previous != badge, ..Outcome::default() }
+    }
+
+    /// A navigation started: forget the old title so the window falls back to the app name.
+    pub fn page_loading(&mut self, id: &str) {
+        self.titles.remove(id);
+    }
+
+    pub fn set_window_title_mode(&mut self, mode: WindowTitleMode) -> Outcome {
+        self.config.settings.window_title = mode;
+        Outcome { changed: true, save: true, ..Outcome::default() }
+    }
+
+    /// Title for the main window, per the window title setting and the active app.
+    pub fn window_title(&self) -> String {
+        let Some(app) = self.active().and_then(|id| self.config.app(id)) else {
+            return APP_TITLE.into();
+        };
+        let label = match self.config.settings.window_title {
+            WindowTitleMode::Fixed => return APP_TITLE.into(),
+            WindowTitleMode::AppName => app.name.clone(),
+            WindowTitleMode::PageTitle => self
+                .titles
+                .get(&app.id)
+                .map(|t| t.trim())
+                .filter(|t| !t.is_empty())
+                .map_or_else(|| app.name.clone(), str::to_owned),
+        };
+        format!("{label} - {APP_TITLE}")
     }
 
     /// Turns a web Notification into an OS notification request (spec §4.6).

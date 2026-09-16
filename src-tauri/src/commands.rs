@@ -4,7 +4,7 @@
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
 use isotope_core::controller::{Controller, Outcome, Snapshot, Toast};
-use isotope_core::model::SidebarItem;
+use isotope_core::model::{SidebarItem, WindowTitleMode};
 use isotope_core::ops::{Container, NewApp, OpError};
 use tauri::{AppHandle, Manager};
 
@@ -129,6 +129,12 @@ pub async fn remove_profile(app: AppHandle, id: String) -> Result<(), String> {
 #[tauri::command]
 pub async fn set_default_hibernation_minutes(app: AppHandle, minutes: u32) {
     let outcome = with_controller(&app, |c| c.set_default_hibernation_minutes(minutes));
+    apply(&app, outcome);
+}
+
+#[tauri::command]
+pub async fn set_window_title_mode(app: AppHandle, mode: WindowTitleMode) {
+    let outcome = with_controller(&app, |c| c.set_window_title_mode(mode));
     apply(&app, outcome);
 }
 

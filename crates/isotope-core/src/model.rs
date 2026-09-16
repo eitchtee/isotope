@@ -78,10 +78,26 @@ pub enum SidebarItem {
 pub struct Settings {
     pub default_hibernation_minutes: u32,
     pub last_active_app_id: Option<String>,
+    /// Missing in configs written before this setting existed.
+    #[serde(default)]
+    pub window_title: WindowTitleMode,
 }
 
 impl Default for Settings {
     fn default() -> Self {
-        Self { default_hibernation_minutes: 10, last_active_app_id: None }
+        Self { default_hibernation_minutes: 10, last_active_app_id: None, window_title: WindowTitleMode::default() }
     }
+}
+
+/// How the main window title is built.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum WindowTitleMode {
+    /// Always "Isotope".
+    #[default]
+    Fixed,
+    /// "<active app name> - Isotope".
+    AppName,
+    /// "<active page title> - Isotope", falling back to the app name while the page loads.
+    PageTitle,
 }

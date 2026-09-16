@@ -68,6 +68,17 @@ test("default hibernation minutes are validated before saving", async () => {
   expect(calls).toEqual([["set_default_hibernation_minutes", { minutes: 20 }]]);
 });
 
+test("window title mode is saved on change", async () => {
+  const { calls } = setup();
+  const select = screen.getByLabelText("Window title");
+  expect(select).toHaveValue("fixed");
+
+  await fireEvent.change(select, { target: { value: "pageTitle" } });
+  await flush();
+
+  expect(calls).toEqual([["set_window_title_mode", { mode: "pageTitle" }]]);
+});
+
 test("failures and read-only mode are shown", async () => {
   setup({ failWith: "disk full", readOnly: true });
   expect(screen.getByRole("status")).toHaveTextContent("read-only");

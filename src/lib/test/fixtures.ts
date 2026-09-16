@@ -29,7 +29,7 @@ export function snapshot(overrides: Partial<Snapshot> = {}): Snapshot {
         { type: "app", id: "b" },
         { type: "folder", id: "f" },
       ],
-      settings: { defaultHibernationMinutes: 10, lastActiveAppId: "a" },
+      settings: { defaultHibernationMinutes: 10, lastActiveAppId: "a", windowTitle: "fixed" },
     },
     states: { a: { kind: "active" }, b: { kind: "running" }, c: { kind: "hibernated" } },
     badges: { b: 3 },

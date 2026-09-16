@@ -1,7 +1,7 @@
 <script lang="ts">
   import { api } from "$lib/api";
   import type { ShellStore } from "$lib/shell.svelte";
-  import { DEFAULT_PROFILE_ID } from "$lib/types";
+  import { DEFAULT_PROFILE_ID, type WindowTitleMode } from "$lib/types";
   import Modal from "./Modal.svelte";
 
   type Props = { store: ShellStore; onclose: () => void };
@@ -75,6 +75,19 @@
           onchange={(e) => setMinutes(Number((e.currentTarget as HTMLInputElement).value))}
         />
       </div>
+      <div class="field">
+        <label for="window-title">Window title</label>
+        <select
+          id="window-title"
+          value={config.settings.windowTitle}
+          onchange={(e) =>
+            attempt(() => api.setWindowTitleMode((e.currentTarget as HTMLSelectElement).value as WindowTitleMode))}
+        >
+          <option value="fixed">Fixed — "Isotope"</option>
+          <option value="appName">App name — "Gmail - Isotope"</option>
+          <option value="pageTitle">Page title — "Inbox (3) - Isotope"</option>
+        </select>
+      </div>
     </section>
 
     <section>
@@ -132,6 +145,18 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
+    font-size: 13px;
+  }
+  .field + .field {
+    margin-top: 10px;
+  }
+  select {
+    padding: 6px 9px;
+    border: 1px solid #3a3a44;
+    border-radius: 8px;
+    background: #1b1b1f;
+    color: #e4e4e7;
+    font: inherit;
     font-size: 13px;
   }
   .hint {
