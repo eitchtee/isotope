@@ -94,6 +94,7 @@ pub fn run() {
                 saver,
                 pending_toasts: Mutex::new(toasts),
                 background: Default::default(),
+                pending_reloads: Default::default(),
             });
 
             let window = WindowBuilder::new(app, "main")

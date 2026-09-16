@@ -73,15 +73,28 @@ pub async fn remove_app(app: AppHandle, id: String) -> Result<(), String> {
     Ok(())
 }
 
-/// Reloads the app from its configured URL, not the page it's currently on.
+/// Navigates the app back to its configured URL and reloads it from there.
 #[tauri::command]
 pub async fn reload_app(app: AppHandle, id: String) -> Result<(), String> {
     let url = with_controller(&app, |c| c.config().app(&id).map(|a| a.url.clone()))
         .ok_or_else(|| format!("app not found: {id}"))?;
     let url: tauri::Url = url.parse().map_err(|e| format!("invalid URL {url}: {e}"))?;
-    match app.get_webview(&app_label(&id)) {
-        Some(webview) => webview.navigate(url).map_err(|e| e.to_string()),
-        None => Ok(()),
+    let Some(webview) = app.get_webview(&app_label(&id)) else { return Ok(()) };
+
+    let without_fragment = |u: &tauri::Url| {
+        let mut u = u.clone();
+        u.set_fragment(None);
+        u
+    };
+    let same_document = webview.url().is_ok_and(|current| without_fragment(&current) == without_fragment(&url));
+    if same_document {
+        // Only the fragment (if anything) changes, so there's no page load to wait for.
+        webview.navigate(url).map_err(|e| e.to_string())?;
+        webview.reload().map_err(|e| e.to_string())
+    } else {
+        // Reload once the navigation's page load finishes (see host's on_page_load).
+        app.state::<Shared>().pending_reloads.lock().expect("reload mutex poisoned").insert(id);
+        webview.navigate(url).map_err(|e| e.to_string())
     }
 }
 

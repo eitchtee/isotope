@@ -26,6 +26,8 @@ pub struct Shared {
     /// Toasts raised before the shell was listening (e.g. config recovery).
     pub pending_toasts: Mutex<Vec<Toast>>,
     pub background: crate::background::BackgroundApps,
+    /// Apps to reload once their current navigation finishes loading (Reload menu entry).
+    pub pending_reloads: Mutex<std::collections::HashSet<String>>,
 }
 
 static POPUPS: AtomicUsize = AtomicUsize::new(0);
@@ -180,13 +182,21 @@ fn app_webview_builder(handle: &AppHandle, app: &App) -> Result<WebviewBuilder<W
             apply(&handle, outcome);
         })
         .on_page_load(|webview, payload| {
-            if !matches!(payload.event(), PageLoadEvent::Started) {
-                return;
-            }
             let Some(app_id) = webview.label().strip_prefix("app-") else { return };
             let handle = webview.app_handle().clone();
-            with_controller(&handle, |c| c.page_loading(app_id));
-            update_window_title(&handle);
+            match payload.event() {
+                PageLoadEvent::Started => {
+                    with_controller(&handle, |c| c.page_loading(app_id));
+                    update_window_title(&handle);
+                }
+                PageLoadEvent::Finished => {
+                    let pending =
+                        handle.state::<Shared>().pending_reloads.lock().expect("reload mutex poisoned").remove(app_id);
+                    if pending {
+                        let _ = webview.reload();
+                    }
+                }
+            }
         });
     if let Some(user_agent) = &app.user_agent {
         builder = builder.user_agent(user_agent);
