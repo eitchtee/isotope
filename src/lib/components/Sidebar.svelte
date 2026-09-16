@@ -21,6 +21,8 @@
 
   let snapshot = $derived(store.snapshot);
   let items = $derived(snapshot ? resolveSidebar(snapshot) : []);
+  /** Where the dragged icon would land, for the drop indicator. */
+  let hint = $state<{ index: number; where: "before" | "after" | "into" } | null>(null);
 
   function asSidebarItem(item: ResolvedItem): SidebarItem {
     return item.type === "app" ? { type: "app", id: item.id } : { type: "folder", id: item.id };
@@ -37,13 +39,25 @@
   }
 
   function onDragOver(event: DragEvent, item: ResolvedItem, index: number) {
-    if (dragging.current && snapshot && planMove(dragging.current, dropTarget(event, item, index), snapshot)) {
-      event.preventDefault();
+    if (!dragging.current || !snapshot) return;
+    const target = dropTarget(event, item, index);
+    if (!planMove(dragging.current, target, snapshot)) {
+      hint = null;
+      return;
     }
+    event.preventDefault();
+    if (target.kind === "into-folder") hint = { index, where: "into" };
+    else if (target.kind === "sidebar-slot") hint = { index, where: target.index === index ? "before" : "after" };
+  }
+
+  function onDragEnd() {
+    dragging.current = null;
+    hint = null;
   }
 
   function onDrop(event: DragEvent, item: ResolvedItem, index: number) {
     event.preventDefault();
+    hint = null;
     const drag = dragging.current;
     dragging.current = null;
     if (!drag || !snapshot) return;
@@ -58,10 +72,13 @@
       {#each items as item, index (item.type + ":" + item.id)}
         <li
           draggable="true"
+          class:drop-before={hint?.index === index && hint.where === "before"}
+          class:drop-after={hint?.index === index && hint.where === "after"}
+          class:drop-into={hint?.index === index && hint.where === "into"}
           ondragstart={(e) => onDragStart(e, item, index)}
           ondragover={(e) => onDragOver(e, item, index)}
           ondrop={(e) => onDrop(e, item, index)}
-          ondragend={() => (dragging.current = null)}
+          ondragend={onDragEnd}
         >
           {#if item.type === "app"}
             <AppIcon
@@ -80,7 +97,7 @@
               badge={folderBadge(snapshot, item.folder)}
               open={snapshot.folderPanel === item.id}
               iconUrl={(app) => icons.url(app.id, app.icon)}
-              ontoggle={() => api.toggleFolderPanel(item.id).catch(store.reportError)}
+              ontoggle={() => api.openFolder(item.id).catch(store.reportError)}
               oncontextmenu={() => onfoldermenu(item.folder)}
             />
           {/if}
@@ -117,6 +134,29 @@
     gap: 10px;
     overflow-y: auto;
     scrollbar-width: none;
+  }
+  li {
+    position: relative;
+  }
+  li.drop-before::before,
+  li.drop-after::after {
+    content: "";
+    position: absolute;
+    left: 2px;
+    right: 2px;
+    height: 2px;
+    border-radius: 1px;
+    background: #7c9cff;
+  }
+  li.drop-before::before {
+    top: -6px;
+  }
+  li.drop-after::after {
+    bottom: -6px;
+  }
+  li.drop-into :global(.folder-icon) {
+    outline: 2px solid #7c9cff;
+    outline-offset: 2px;
   }
   .actions {
     display: flex;

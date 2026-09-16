@@ -54,7 +54,7 @@ pub fn run() {
             commands::get_state,
             commands::take_pending_toasts,
             commands::activate_app,
-            commands::toggle_folder_panel,
+            commands::open_folder,
             commands::add_app,
             commands::update_app,
             commands::remove_app,
@@ -99,7 +99,9 @@ pub fn run() {
                 .background_color(BACKGROUND)
                 .build()?;
             window.add_child(
-                WebviewBuilder::new("shell", WebviewUrl::App("index.html".into())),
+                // Tauri's native file-drop handler swallows HTML5 drag events on Windows,
+                // which the sidebar needs for reordering.
+                WebviewBuilder::new("shell", WebviewUrl::App("index.html".into())).disable_drag_drop_handler(),
                 LogicalPosition::new(0.0, 0.0),
                 LogicalSize::new(1280.0, 800.0),
             )?;

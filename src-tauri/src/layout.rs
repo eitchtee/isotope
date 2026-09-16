@@ -1,7 +1,7 @@
 use isotope_core::controller::View;
 
 pub const SIDEBAR_WIDTH: f64 = 64.0;
-pub const FOLDER_PANEL_WIDTH: f64 = 200.0;
+pub const FOLDER_PANEL_WIDTH: f64 = 56.0;
 pub const TOAST_HEIGHT: f64 = 32.0;
 
 /// Logical-pixel rectangle.
@@ -35,13 +35,13 @@ mod tests {
     fn folder_panel_and_toast_shrink_the_content() {
         let view = View { folder_panel_open: true, overlay_open: false, toast_visible: true };
         let b = content_bounds(1280.0, 800.0, view);
-        assert_eq!(b, Bounds { x: 264.0, y: 0.0, width: 1016.0, height: 768.0 });
+        assert_eq!(b, Bounds { x: 120.0, y: 0.0, width: 1160.0, height: 768.0 });
     }
 
     #[test]
     fn tiny_windows_never_produce_negative_sizes() {
         let view = View { folder_panel_open: true, overlay_open: false, toast_visible: true };
-        let b = content_bounds(100.0, 20.0, view);
+        let b = content_bounds(100.0, 20.0, view); // narrower than sidebar + folder panel
         assert_eq!((b.width, b.height), (0.0, 0.0));
     }
 }

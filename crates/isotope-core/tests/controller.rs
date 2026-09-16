@@ -117,6 +117,86 @@ fn toggle_folder_panel() {
     assert_eq!(c.toggle_folder_panel("nope"), Err(OpError::FolderNotFound("nope".into())));
 }
 
+/// App A at the top level; folder F holds B, C, D. Apps listed in `hibernated` start hibernated.
+/// Returns a started controller (A active), ids [A, B, C, D] and the folder id.
+fn folder_setup(hibernated: &[usize]) -> (Controller, Vec<String>, String, Instant) {
+    let mut config = Config::default();
+    let ids: Vec<String> = ["A", "B", "C", "D"].iter().map(|n| config.add_app(new_app(n)).unwrap()).collect();
+    let folder = config.add_folder("F", &ids[1..]).unwrap();
+    for &i in hibernated {
+        config.apps[i].hibernation.start_hibernated = true;
+    }
+    let mut c = Controller::new(config, false);
+    let now = Instant::now();
+    c.startup(now);
+    assert_eq!(c.active(), Some(ids[0].as_str()));
+    (c, ids, folder, now)
+}
+
+#[test]
+fn opening_a_folder_activates_its_first_live_app() {
+    let (mut c, ids, folder, now) = folder_setup(&[1]);
+
+    let out = c.open_folder(&folder, now).unwrap();
+
+    assert_eq!(out.effects, vec![Effect::Show(ids[2].clone()), Effect::Hide(ids[0].clone())]);
+    assert!(out.changed && out.layout);
+    assert_eq!(c.active(), Some(ids[2].as_str()));
+    assert_eq!(c.snapshot().folder_panel, Some(folder));
+}
+
+#[test]
+fn opening_a_folder_of_hibernated_apps_wakes_the_first() {
+    let (mut c, ids, folder, now) = folder_setup(&[1, 2, 3]);
+
+    let out = c.open_folder(&folder, now).unwrap();
+
+    assert_eq!(out.effects, vec![create(&ids[1], true), Effect::Hide(ids[0].clone())]);
+    assert_eq!(c.active(), Some(ids[1].as_str()));
+}
+
+#[test]
+fn clicking_an_open_folder_closes_the_panel_and_keeps_the_app() {
+    let (mut c, ids, folder, now) = folder_setup(&[]);
+    c.open_folder(&folder, now).unwrap();
+    assert_eq!(c.active(), Some(ids[1].as_str()));
+
+    let out = c.open_folder(&folder, now).unwrap();
+
+    assert!(out.effects.is_empty() && out.layout);
+    assert!(!c.view().folder_panel_open);
+    assert_eq!(c.active(), Some(ids[1].as_str()));
+}
+
+#[test]
+fn opening_a_folder_keeps_an_active_app_that_is_inside_it() {
+    let (mut c, ids, folder, now) = folder_setup(&[]);
+    c.activate(&ids[3], now).unwrap();
+    c.open_folder(&folder, now).unwrap(); // panel was open (D is inside), so this closes it
+
+    let out = c.open_folder(&folder, now).unwrap();
+
+    assert!(out.effects.is_empty());
+    assert_eq!(c.active(), Some(ids[3].as_str()));
+    assert!(c.view().folder_panel_open);
+}
+
+#[test]
+fn opening_an_empty_folder_only_opens_the_panel() {
+    let (mut c, ids, folder, now) = folder_setup(&[]);
+    for id in &ids[1..] {
+        c.move_item(&isotope_core::model::SidebarItem::App { id: id.clone() }, &isotope_core::ops::Container::Sidebar, 99)
+            .unwrap();
+    }
+
+    let out = c.open_folder(&folder, now).unwrap();
+
+    assert!(out.effects.is_empty());
+    assert_eq!(c.active(), Some(ids[0].as_str()));
+    assert!(c.view().folder_panel_open);
+    assert_eq!(c.open_folder("nope", now), Err(OpError::FolderNotFound("nope".into())));
+}
+
 #[test]
 fn background_apps_hibernate_after_their_timeout() {
     let (config, ids, _) = setup_config();

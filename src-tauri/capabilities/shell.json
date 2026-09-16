@@ -8,7 +8,7 @@
     "allow-get-state",
     "allow-take-pending-toasts",
     "allow-activate-app",
-    "allow-toggle-folder-panel",
+    "allow-open-folder",
     "allow-add-app",
     "allow-update-app",
     "allow-remove-app",

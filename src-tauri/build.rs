@@ -4,7 +4,7 @@ const COMMANDS: &[&str] = &[
     "get_state",
     "take_pending_toasts",
     "activate_app",
-    "toggle_folder_panel",
+    "open_folder",
     "add_app",
     "update_app",
     "remove_app",

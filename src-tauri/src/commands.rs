@@ -38,8 +38,8 @@ pub async fn activate_app(app: AppHandle, id: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub async fn toggle_folder_panel(app: AppHandle, folder_id: String) -> Result<(), String> {
-    run(&app, |c| unit(c.toggle_folder_panel(&folder_id)))
+pub async fn open_folder(app: AppHandle, folder_id: String) -> Result<(), String> {
+    run(&app, |c| unit(c.open_folder(&folder_id, Instant::now())))
 }
 
 #[tauri::command]

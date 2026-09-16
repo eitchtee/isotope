@@ -229,6 +229,36 @@ impl Controller {
         Ok(Outcome { changed: true, layout: true, ..Outcome::default() })
     }
 
+    /// Folder icon click. If this folder's panel is open, close it. Otherwise open the panel and
+    /// activate an app from the folder: the active app if it's already inside, else the first
+    /// app that isn't hibernated, else the first app. An empty folder just opens its panel.
+    pub fn open_folder(&mut self, folder_id: &str, now: Instant) -> Result<Outcome, OpError> {
+        let folder = self
+            .config
+            .folder(folder_id)
+            .ok_or_else(|| OpError::FolderNotFound(folder_id.into()))?;
+        if self.folder_panel.as_deref() == Some(folder_id) {
+            self.folder_panel = None;
+            return Ok(Outcome { changed: true, layout: true, ..Outcome::default() });
+        }
+
+        let active_inside = self.active().filter(|active| folder.app_ids.iter().any(|id| id == active));
+        let first_live = folder
+            .app_ids
+            .iter()
+            .find(|id| matches!(self.lifecycle.state(id), AppState::Running | AppState::Active))
+            .map(String::as_str);
+        let target = active_inside.or(first_live).or(folder.app_ids.first().map(String::as_str)).map(str::to_owned);
+
+        let mut out = match target {
+            Some(id) => self.activate(&id, now)?,
+            None => Outcome { changed: true, ..Outcome::default() },
+        };
+        self.folder_panel = Some(folder_id.into());
+        out.layout = true;
+        Ok(out)
+    }
+
     pub fn hibernate(&mut self, id: &str) -> Result<Outcome, OpError> {
         if self.config.app(id).is_none() {
             return Err(OpError::AppNotFound(id.into()));

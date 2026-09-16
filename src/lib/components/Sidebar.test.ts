@@ -42,7 +42,7 @@ test("clicks call activate, toggle panel and the action callbacks", async () => 
 
   expect(calls).toEqual([
     ["activate_app", { id: "a" }],
-    ["toggle_folder_panel", { folderId: "f" }],
+    ["open_folder", { folderId: "f" }],
   ]);
   expect(props.onaddapp).toHaveBeenCalledOnce();
   expect(props.onsettings).toHaveBeenCalledOnce();
@@ -63,7 +63,10 @@ test("dropping an app on another item's top half moves it there", async () => {
 
   await fireEvent.dragStart(items[0]);
   await fireEvent.dragOver(items[2]);
+  expect(items[2]).toHaveClass("drop-before");
+
   await fireEvent.drop(items[2]);
 
+  expect(items[2]).not.toHaveClass("drop-before");
   expect(calls).toEqual([["move_item", { item: { type: "app", id: "a" }, target: { type: "sidebar" }, index: 1 }]]);
 });

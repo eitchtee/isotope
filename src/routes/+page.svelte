@@ -70,7 +70,8 @@
     showContextMenu(entries).catch(shell.reportError);
   }
 
-  const contentLeft = $derived(shell.snapshot?.folderPanel ? 264 : 64);
+  // Sidebar (64px) plus folder panel (56px); must match src-tauri/src/layout.rs.
+  const contentLeft = $derived(shell.snapshot?.folderPanel ? 120 : 64);
 </script>
 
 <Sidebar

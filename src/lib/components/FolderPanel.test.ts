@@ -28,11 +28,16 @@ test("hidden when no folder panel is open", () => {
   expect(screen.queryByRole("region")).toBeNull();
 });
 
-test("lists the folder's apps, activates on click and opens menus", async () => {
+test("shows the folder's apps as small icons with tooltips", async () => {
   const { calls, onappmenu } = setup("f");
   expect(screen.getByRole("region", { name: "Work" })).toBeInTheDocument();
-  // Each row shows the initials followed by the name.
-  expect(screen.getAllByRole("button").map((b) => b.textContent?.replace(/\s+/g, ""))).toEqual(["CC", "DD", "EE"]);
+
+  const buttons = screen.getAllByRole("button");
+  expect(buttons.map((b) => b.getAttribute("aria-label"))).toEqual(["C", "D", "E"]);
+  for (const button of buttons) {
+    expect(button).toHaveClass("small");
+    expect(button).toHaveAttribute("title", button.getAttribute("aria-label"));
+  }
 
   await fireEvent.click(screen.getByRole("button", { name: "D" }));
   await fireEvent.contextMenu(screen.getByRole("button", { name: "E" }));
@@ -41,13 +46,16 @@ test("lists the folder's apps, activates on click and opens menus", async () => 
   expect(onappmenu).toHaveBeenCalledWith(expect.objectContaining({ id: "e" }));
 });
 
-test("dragging within the panel reorders the folder", async () => {
+test("dragging within the panel reorders the folder and shows a drop indicator", async () => {
   const { calls } = setup("f");
   const items = screen.getAllByRole("listitem");
 
   await fireEvent.dragStart(items[0]);
   await fireEvent.dragOver(items[2]);
+  expect(items[2]).toHaveClass("drop-before");
+
   await fireEvent.drop(items[2]);
 
+  expect(items[2]).not.toHaveClass("drop-before");
   expect(calls).toEqual([["move_item", { item: { type: "app", id: "c" }, target: { type: "folder", id: "f" }, index: 1 }]]);
 });

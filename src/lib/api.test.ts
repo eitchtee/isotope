@@ -11,7 +11,7 @@ test("commands use the Rust names and camelCase argument keys", async () => {
     return cmd === "add_folder" ? "f1" : null;
   });
 
-  await api.toggleFolderPanel("f1");
+  await api.openFolder("f1");
   await api.moveItem({ type: "app", id: "a" }, { type: "folder", id: "f1" }, 2);
   expect(await api.addFolder("Work", ["a"])).toBe("f1");
   await api.setAppIcon("a", [1, 2, 3]);
@@ -20,7 +20,7 @@ test("commands use the Rust names and camelCase argument keys", async () => {
   await api.setWindowTitleMode("pageTitle");
 
   expect(calls).toEqual([
-    ["toggle_folder_panel", { folderId: "f1" }],
+    ["open_folder", { folderId: "f1" }],
     ["move_item", { item: { type: "app", id: "a" }, target: { type: "folder", id: "f1" }, index: 2 }],
     ["add_folder", { name: "Work", appIds: ["a"] }],
     ["set_app_icon", { id: "a", bytes: [1, 2, 3] }],

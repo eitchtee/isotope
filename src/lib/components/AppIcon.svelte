@@ -8,11 +8,13 @@
     badge?: Badge;
     active: boolean;
     iconUrl: string | null;
+    /** "small" is used inside the folder panel. */
+    size?: "normal" | "small";
     onactivate: () => void;
     oncontextmenu?: (event: MouseEvent) => void;
   };
 
-  let { app, status, badge, active, iconUrl, onactivate, oncontextmenu }: Props = $props();
+  let { app, status, badge, active, iconUrl, size = "normal", onactivate, oncontextmenu }: Props = $props();
 
   function handleContextMenu(event: MouseEvent) {
     if (!oncontextmenu) return;
@@ -24,6 +26,7 @@
 <button
   class="app-icon"
   class:active
+  class:small={size === "small"}
   class:hibernated={status.kind === "hibernated"}
   aria-label={app.name}
   aria-current={active ? "page" : undefined}
@@ -74,6 +77,22 @@
   }
   .app-icon.hibernated {
     opacity: 0.45;
+  }
+  .app-icon.small {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+  }
+  .app-icon.small img {
+    width: 22px;
+    height: 22px;
+  }
+  .app-icon.small .letters {
+    font-size: 12px;
+  }
+  .app-icon.small.active::before {
+    top: 8px;
+    bottom: 8px;
   }
   img {
     width: 28px;
