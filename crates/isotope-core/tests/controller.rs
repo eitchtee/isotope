@@ -156,15 +156,15 @@ fn opening_a_folder_of_hibernated_apps_wakes_the_first() {
 }
 
 #[test]
-fn clicking_an_open_folder_closes_the_panel_and_keeps_the_app() {
+fn clicking_an_open_folder_does_nothing() {
     let (mut c, ids, folder, now) = folder_setup(&[]);
     c.open_folder(&folder, now).unwrap();
     assert_eq!(c.active(), Some(ids[1].as_str()));
 
     let out = c.open_folder(&folder, now).unwrap();
 
-    assert!(out.effects.is_empty() && out.layout);
-    assert!(!c.view().folder_panel_open);
+    assert_eq!(out, isotope_core::controller::Outcome::default());
+    assert!(c.view().folder_panel_open);
     assert_eq!(c.active(), Some(ids[1].as_str()));
 }
 
@@ -172,7 +172,7 @@ fn clicking_an_open_folder_closes_the_panel_and_keeps_the_app() {
 fn opening_a_folder_keeps_an_active_app_that_is_inside_it() {
     let (mut c, ids, folder, now) = folder_setup(&[]);
     c.activate(&ids[3], now).unwrap();
-    c.open_folder(&folder, now).unwrap(); // panel was open (D is inside), so this closes it
+    c.toggle_folder_panel(&folder).unwrap(); // close the panel that activating D opened
 
     let out = c.open_folder(&folder, now).unwrap();
 

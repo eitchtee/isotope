@@ -229,17 +229,17 @@ impl Controller {
         Ok(Outcome { changed: true, layout: true, ..Outcome::default() })
     }
 
-    /// Folder icon click. If this folder's panel is open, close it. Otherwise open the panel and
-    /// activate an app from the folder: the active app if it's already inside, else the first
-    /// app that isn't hibernated, else the first app. An empty folder just opens its panel.
+    /// Folder icon click: open the panel and activate an app from the folder: the active app if
+    /// it's already inside, else the first app that isn't hibernated, else the first app.
+    /// Clicking an already-open folder does nothing (the panel keeps showing what's open).
+    /// An empty folder just opens its panel.
     pub fn open_folder(&mut self, folder_id: &str, now: Instant) -> Result<Outcome, OpError> {
         let folder = self
             .config
             .folder(folder_id)
             .ok_or_else(|| OpError::FolderNotFound(folder_id.into()))?;
         if self.folder_panel.as_deref() == Some(folder_id) {
-            self.folder_panel = None;
-            return Ok(Outcome { changed: true, layout: true, ..Outcome::default() });
+            return Ok(Outcome::default());
         }
 
         let active_inside = self.active().filter(|active| folder.app_ids.iter().any(|id| id == active));
