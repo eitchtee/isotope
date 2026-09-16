@@ -47,10 +47,12 @@
   });
 
   function openAppMenu(app: App) {
-    const entries = appMenuEntries(app, shell.state(app.id), {
+    const muted = shell.snapshot?.muted.includes(app.id) ?? false;
+    const entries = appMenuEntries(app, shell.state(app.id), muted, {
       reload: () => api.reloadApp(app.id).catch(shell.reportError),
       hibernate: () => api.hibernateApp(app.id).catch(shell.reportError),
       wake: () => api.wakeApp(app.id).catch(shell.reportError),
+      toggleMute: () => api.setAppMuted(app.id, !muted).catch(shell.reportError),
       edit: () => (dialog = { kind: "edit", app }),
       newFolder: () =>
         api

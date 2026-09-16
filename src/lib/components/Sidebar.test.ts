@@ -1,4 +1,5 @@
 import { afterEach, expect, test, vi } from "vitest";
+import { tick } from "svelte";
 import { fireEvent, render, screen } from "@testing-library/svelte";
 import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
 import Sidebar from "./Sidebar.svelte";
@@ -29,6 +30,19 @@ test("renders items in sidebar order with badges and active state", () => {
   expect(buttons).toEqual(["A", "B", "Folder Work", "Add app", "Settings"]);
   expect(screen.getByRole("button", { name: "A" })).toHaveAttribute("aria-current", "page");
   expect(screen.getByRole("button", { name: "B" }).querySelector("[data-testid=badge]")).toHaveTextContent("3");
+});
+
+test("speaker markers follow playing and muted apps", async () => {
+  const { store } = setup();
+  const marker = (name: string) => screen.getByRole("button", { name }).querySelector("[data-testid=audio]");
+  expect(marker("A")).toBeNull();
+
+  store.snapshot = { ...store.snapshot!, playingAudio: ["a", "c"], muted: ["b"] };
+  await tick();
+
+  expect(marker("A")).toHaveAttribute("data-state", "playing");
+  expect(marker("B")).toHaveAttribute("data-state", "muted");
+  expect(marker("Folder Work")).toHaveAttribute("data-state", "playing");
 });
 
 test("clicks call activate, toggle panel and the action callbacks", async () => {

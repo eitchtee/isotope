@@ -82,6 +82,15 @@ pub async fn reload_app(app: AppHandle, id: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+pub async fn set_app_muted(app: AppHandle, id: String, muted: bool) -> Result<(), String> {
+    run(&app, |c| unit(c.set_muted(&id, muted)))?;
+    if let Some(webview) = app.get_webview(&app_label(&id)) {
+        crate::audio::set_muted(&webview, muted);
+    }
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn hibernate_app(app: AppHandle, id: String) -> Result<(), String> {
     run(&app, |c| unit(c.hibernate(&id)))
 }

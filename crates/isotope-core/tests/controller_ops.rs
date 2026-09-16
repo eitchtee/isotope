@@ -228,6 +228,30 @@ fn placeholder_titles_are_detected() {
 }
 
 #[test]
+fn audio_and_mute_are_tracked_while_the_page_lives() {
+    let (mut c, ids, _) = started();
+
+    assert!(c.audio_changed(&ids[1], true).changed);
+    assert!(!c.audio_changed(&ids[1], true).changed);
+    assert!(c.set_muted(&ids[1], true).unwrap().changed);
+    assert!(c.is_muted(&ids[1]));
+
+    let json = serde_json::to_value(c.snapshot()).unwrap();
+    assert_eq!(json["playingAudio"], serde_json::json!([ids[1]]));
+    assert_eq!(json["muted"], serde_json::json!([ids[1]]));
+
+    assert!(c.audio_changed(&ids[1], false).changed);
+    assert!(!c.audio_changed("unknown", true).changed);
+    assert_eq!(c.set_muted("unknown", true), Err(OpError::AppNotFound("unknown".into())));
+
+    c.audio_changed(&ids[1], true);
+    c.hibernate(&ids[1]).unwrap();
+    let snapshot = c.snapshot();
+    assert!(snapshot.playing_audio.is_empty());
+    assert!(snapshot.muted.is_empty());
+}
+
+#[test]
 fn set_icon_saves() {
     let (mut c, ids, _) = started();
     let out = c.set_icon(&ids[0], Some("icons/a.png#1".into())).unwrap();

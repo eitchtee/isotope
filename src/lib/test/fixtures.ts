@@ -37,6 +37,8 @@ export function snapshot(overrides: Partial<Snapshot> = {}): Snapshot {
     activeAppId: "a",
     folderPanel: null,
     readOnly: false,
+    playingAudio: [],
+    muted: [],
     ...overrides,
   };
 }

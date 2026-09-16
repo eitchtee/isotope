@@ -1,4 +1,14 @@
-import type { App, Badge, Folder, Snapshot } from "./types";
+import type { App, AudioMarker, Badge, Folder, Snapshot } from "./types";
+
+export function appAudio(snapshot: Snapshot, appId: string): AudioMarker {
+  if (snapshot.muted.includes(appId)) return "muted";
+  return snapshot.playingAudio.includes(appId) ? "playing" : null;
+}
+
+/** A folder shows the playing marker when any unmuted app inside is playing. */
+export function folderAudio(snapshot: Snapshot, folder: Folder): AudioMarker {
+  return folder.appIds.some((id) => appAudio(snapshot, id) === "playing") ? "playing" : null;
+}
 
 export type ResolvedItem =
   | { type: "app"; id: string; app: App }

@@ -19,10 +19,12 @@ export async function showContextMenu(entries: MenuEntry[]): Promise<void> {
 export function appMenuEntries(
   _app: App,
   status: AppState,
+  muted: boolean,
   actions: {
     reload: () => void;
     hibernate: () => void;
     wake: () => void;
+    toggleMute: () => void;
     edit: () => void;
     newFolder: () => void;
     remove: () => void;
@@ -33,6 +35,8 @@ export function appMenuEntries(
     { text: "Reload", action: actions.reload, enabled: live },
     { text: "Hibernate now", action: actions.hibernate, enabled: live },
     { text: "Wake without switching", action: actions.wake, enabled: !live },
+    "separator",
+    { text: muted ? "Unmute" : "Mute", action: actions.toggleMute, enabled: live },
     "separator",
     { text: "Edit…", action: actions.edit },
     { text: "New folder with this app", action: actions.newFolder },

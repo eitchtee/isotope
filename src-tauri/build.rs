@@ -9,6 +9,7 @@ const COMMANDS: &[&str] = &[
     "update_app",
     "remove_app",
     "reload_app",
+    "set_app_muted",
     "hibernate_app",
     "wake_app",
     "add_folder",

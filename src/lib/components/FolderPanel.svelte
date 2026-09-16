@@ -4,6 +4,7 @@
   import { dragging } from "$lib/drag.svelte";
   import { icons } from "$lib/icons.svelte";
   import type { ShellStore } from "$lib/shell.svelte";
+  import { appAudio } from "$lib/sidebar";
   import type { App } from "$lib/types";
   import AppIcon from "./AppIcon.svelte";
 
@@ -79,6 +80,7 @@
             active={snapshot.activeAppId === app.id}
             iconUrl={icons.url(app.id, app.icon)}
             size="small"
+            audio={appAudio(snapshot, app.id)}
             onactivate={() => api.activateApp(app.id).catch(store.reportError)}
             oncontextmenu={() => onappmenu(app)}
           />

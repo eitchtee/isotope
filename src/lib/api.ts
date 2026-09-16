@@ -11,6 +11,7 @@ export const api = {
   updateApp: (id: string, input: NewApp) => invoke<void>("update_app", { id, input }),
   removeApp: (id: string) => invoke<void>("remove_app", { id }),
   reloadApp: (id: string) => invoke<void>("reload_app", { id }),
+  setAppMuted: (id: string, muted: boolean) => invoke<void>("set_app_muted", { id, muted }),
   hibernateApp: (id: string) => invoke<void>("hibernate_app", { id }),
   wakeApp: (id: string) => invoke<void>("wake_app", { id }),
   addFolder: (name: string, appIds: string[]) => invoke<string>("add_folder", { name, appIds }),

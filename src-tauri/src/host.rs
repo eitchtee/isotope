@@ -147,9 +147,13 @@ fn create_app_webview(handle: &AppHandle, app_id: &str) -> Result<(), String> {
     let app = current_app(handle, app_id).ok_or("app no longer exists")?;
     let window = handle.get_window("main").ok_or("main window is missing")?;
     let builder = app_webview_builder(handle, &app)?;
-    window
+    let webview = window
         .add_child(builder, LogicalPosition::new(0.0, 0.0), LogicalSize::new(0.0, 0.0))
         .map_err(|e| e.to_string())?;
+    crate::audio::watch(handle, &webview, app_id);
+    if with_controller(handle, |c| c.is_muted(app_id)) {
+        crate::audio::set_muted(&webview, true);
+    }
     Ok(())
 }
 

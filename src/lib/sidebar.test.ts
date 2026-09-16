@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { badgeLabel, folderBadge, initials, resolveSidebar } from "./sidebar";
+import { appAudio, badgeLabel, folderAudio, folderBadge, initials, resolveSidebar } from "./sidebar";
 import { snapshot } from "./test/fixtures";
 
 test("resolveSidebar expands apps and folders in order and skips unknown ids", () => {
@@ -27,6 +27,20 @@ test("folderBadge sums counts and falls back to a dot", () => {
 
   s.badges = {};
   expect(folderBadge(s, folder)).toBeUndefined();
+});
+
+test("audio markers: muted wins, folders show unmuted playing apps", () => {
+  const s = snapshot({ playingAudio: ["a", "c"], muted: ["c", "b"] });
+  const folder = { id: "f", name: "Work", icon: null, appIds: ["b", "c"] };
+
+  expect(appAudio(s, "a")).toBe("playing");
+  expect(appAudio(s, "b")).toBe("muted");
+  expect(appAudio(s, "c")).toBe("muted");
+  expect(folderAudio(s, folder)).toBeNull();
+
+  s.muted = [];
+  expect(folderAudio(s, folder)).toBe("playing");
+  expect(appAudio(s, "unknown")).toBeNull();
 });
 
 test("badgeLabel caps large counts and hides dot text", () => {

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { badgeLabel, initials } from "$lib/sidebar";
-  import type { App, AppState, Badge } from "$lib/types";
+  import type { App, AppState, AudioMarker, Badge } from "$lib/types";
+  import SpeakerMarker from "./SpeakerMarker.svelte";
 
   type Props = {
     app: App;
@@ -10,11 +11,13 @@
     iconUrl: string | null;
     /** "small" is used inside the folder panel. */
     size?: "normal" | "small";
+    audio?: AudioMarker;
     onactivate: () => void;
     oncontextmenu?: (event: MouseEvent) => void;
   };
 
-  let { app, status, badge, active, iconUrl, size = "normal", onactivate, oncontextmenu }: Props = $props();
+  let { app, status, badge, active, iconUrl, size = "normal", audio = null, onactivate, oncontextmenu }: Props =
+    $props();
 
   function handleContextMenu(event: MouseEvent) {
     if (!oncontextmenu) return;
@@ -44,6 +47,10 @@
     <span class="warning" aria-label="Error">!</span>
   {:else if badge !== undefined}
     <span class="badge" class:dot={badge === "dot"} data-testid="badge">{badgeLabel(badge)}</span>
+  {/if}
+
+  {#if audio}
+    <SpeakerMarker state={audio} />
   {/if}
 </button>
 

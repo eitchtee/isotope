@@ -48,6 +48,19 @@ test("hibernated apps are dimmed and errors replace the badge", async () => {
   expect(screen.getByRole("button", { name: "A" })).toHaveAttribute("title", "A: boom");
 });
 
+test("shows a speaker marker when playing or muted", async () => {
+  const { rerender } = render(AppIcon, { app: app("a"), status: { kind: "running" }, active: false, iconUrl: null, onactivate: () => {} });
+  const button = screen.getByRole("button", { name: "A" });
+  expect(button.querySelector("[data-testid=audio]")).toBeNull();
+
+  await rerender({ audio: "playing" });
+  expect(button.querySelector("[data-testid=audio]")).toHaveAttribute("data-state", "playing");
+
+  await rerender({ audio: "muted" });
+  expect(button.querySelector("[data-testid=audio]")).toHaveAttribute("data-state", "muted");
+  expect(button).toHaveAccessibleName("A");
+});
+
 test("context menu handler receives the event", async () => {
   const oncontextmenu = vi.fn();
   render(AppIcon, { app: app("a"), status: { kind: "running" }, active: false, iconUrl: null, onactivate: () => {}, oncontextmenu });

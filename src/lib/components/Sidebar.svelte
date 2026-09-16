@@ -4,7 +4,7 @@
   import { dragging } from "$lib/drag.svelte";
   import { icons } from "$lib/icons.svelte";
   import type { ShellStore } from "$lib/shell.svelte";
-  import { folderBadge, resolveSidebar, type ResolvedItem } from "$lib/sidebar";
+  import { appAudio, folderAudio, folderBadge, resolveSidebar, type ResolvedItem } from "$lib/sidebar";
   import type { App, Folder, SidebarItem } from "$lib/types";
   import AppIcon from "./AppIcon.svelte";
   import FolderIcon from "./FolderIcon.svelte";
@@ -87,6 +87,7 @@
               badge={store.badge(item.id)}
               active={snapshot.activeAppId === item.id}
               iconUrl={icons.url(item.id, item.app.icon)}
+              audio={appAudio(snapshot, item.id)}
               onactivate={() => api.activateApp(item.id).catch(store.reportError)}
               oncontextmenu={() => onappmenu(item.app)}
             />
@@ -97,6 +98,7 @@
               badge={folderBadge(snapshot, item.folder)}
               open={snapshot.folderPanel === item.id}
               iconUrl={(app) => icons.url(app.id, app.icon)}
+              audio={folderAudio(snapshot, item.folder)}
               ontoggle={() => api.openFolder(item.id).catch(store.reportError)}
               oncontextmenu={() => onfoldermenu(item.folder)}
             />

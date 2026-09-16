@@ -65,7 +65,13 @@ export type Snapshot = {
   activeAppId: string | null;
   folderPanel: string | null;
   readOnly: boolean;
+  /** Apps whose page is currently playing sound (Windows only). */
+  playingAudio: string[];
+  muted: string[];
 };
+
+/** Speaker marker on an icon: muted wins over playing. */
+export type AudioMarker = "playing" | "muted" | null;
 
 export type Toast = { level: "info" | "warning" | "error"; message: string };
 

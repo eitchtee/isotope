@@ -13,6 +13,7 @@
     "allow-update-app",
     "allow-remove-app",
     "allow-reload-app",
+    "allow-set-app-muted",
     "allow-hibernate-app",
     "allow-wake-app",
     "allow-add-folder",

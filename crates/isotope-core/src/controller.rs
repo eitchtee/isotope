@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
 use std::time::{Duration, Instant};
 
 use serde::Serialize;
@@ -82,6 +82,9 @@ pub struct Snapshot {
     pub active_app_id: Option<String>,
     pub folder_panel: Option<String>,
     pub read_only: bool,
+    /// Apps whose page is currently playing sound.
+    pub playing_audio: BTreeSet<String>,
+    pub muted: BTreeSet<String>,
 }
 
 #[derive(Debug)]
@@ -96,6 +99,8 @@ pub struct Controller {
     limiter: RateLimiter,
     /// Latest real page title per live app (placeholders are stored as empty).
     titles: HashMap<String, String>,
+    playing_audio: BTreeSet<String>,
+    muted: BTreeSet<String>,
 }
 
 fn policy(config: &Config, id: &str) -> Policy {
@@ -137,6 +142,8 @@ impl Controller {
             toast_visible: false,
             limiter: RateLimiter::notifications(),
             titles: HashMap::new(),
+            playing_audio: BTreeSet::new(),
+            muted: BTreeSet::new(),
         }
     }
 
@@ -176,6 +183,8 @@ impl Controller {
             active_app_id: self.active().map(str::to_owned),
             folder_panel: self.folder_panel.clone(),
             read_only: self.read_only,
+            playing_audio: self.playing_audio.clone(),
+            muted: self.muted.clone(),
         }
     }
 
@@ -264,8 +273,7 @@ impl Controller {
             return Err(OpError::AppNotFound(id.into()));
         }
         let effects = self.lifecycle.hibernate(id);
-        self.badges.remove(id);
-        self.titles.remove(id);
+        self.forget_page(id);
         Ok(Outcome { effects, changed: true, layout: true, ..Outcome::default() })
     }
 
@@ -281,8 +289,7 @@ impl Controller {
         let effects = self.lifecycle.tick(now);
         for effect in &effects {
             if let Effect::Destroy(id) = effect {
-                self.badges.remove(id);
-                self.titles.remove(id);
+                self.forget_page(id);
             }
         }
         Outcome { changed: !effects.is_empty(), effects, ..Outcome::default() }
@@ -314,7 +321,7 @@ impl Controller {
         let recreate = self.config.update_app(id, input)?;
         let effects = if recreate { self.lifecycle.recreate(id) } else { Vec::new() };
         if recreate {
-            self.titles.remove(id);
+            self.forget_page(id);
         }
         if self.config.app(id).is_some_and(|app| !app.badges) {
             self.badges.remove(id);
@@ -325,8 +332,7 @@ impl Controller {
     pub fn remove_app(&mut self, id: &str) -> Result<Outcome, OpError> {
         self.config.remove_app(id)?;
         let effects = self.lifecycle.remove(id);
-        self.badges.remove(id);
-        self.titles.remove(id);
+        self.forget_page(id);
         Ok(Outcome { effects, ..self.structure_changed() })
     }
 
@@ -394,6 +400,36 @@ impl Controller {
             None => self.badges.remove(id),
         };
         Outcome { changed: previous != badge, ..Outcome::default() }
+    }
+
+    /// The page started or stopped playing sound.
+    pub fn audio_changed(&mut self, id: &str, playing: bool) -> Outcome {
+        if self.config.app(id).is_none() {
+            return Outcome::default();
+        }
+        let changed = if playing { self.playing_audio.insert(id.into()) } else { self.playing_audio.remove(id) };
+        Outcome { changed, ..Outcome::default() }
+    }
+
+    /// Records the mute state; the Tauri layer applies it to the webview.
+    pub fn set_muted(&mut self, id: &str, muted: bool) -> Result<Outcome, OpError> {
+        if self.config.app(id).is_none() {
+            return Err(OpError::AppNotFound(id.into()));
+        }
+        let changed = if muted { self.muted.insert(id.into()) } else { self.muted.remove(id) };
+        Ok(Outcome { changed, ..Outcome::default() })
+    }
+
+    pub fn is_muted(&self, id: &str) -> bool {
+        self.muted.contains(id)
+    }
+
+    /// The app's page is gone (hibernated, removed or recreated): drop page-derived state.
+    fn forget_page(&mut self, id: &str) {
+        self.badges.remove(id);
+        self.titles.remove(id);
+        self.playing_audio.remove(id);
+        self.muted.remove(id);
     }
 
     /// A navigation started: forget the old title so the window falls back to the app name.

@@ -1,3 +1,4 @@
+pub mod audio;
 pub mod background;
 pub mod bridge;
 pub mod commands;
@@ -60,6 +61,7 @@ pub fn run() {
             commands::update_app,
             commands::remove_app,
             commands::reload_app,
+            commands::set_app_muted,
             commands::hibernate_app,
             commands::wake_app,
             commands::add_folder,

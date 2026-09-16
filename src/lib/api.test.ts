@@ -18,6 +18,7 @@ test("commands use the Rust names and camelCase argument keys", async () => {
   await api.setDefaultHibernationMinutes(15);
   await api.refetchAppIcon("a");
   await api.setWindowTitleMode("pageTitle");
+  await api.setAppMuted("a", true);
 
   expect(calls).toEqual([
     ["open_folder", { folderId: "f1" }],
@@ -27,5 +28,6 @@ test("commands use the Rust names and camelCase argument keys", async () => {
     ["set_default_hibernation_minutes", { minutes: 15 }],
     ["refetch_app_icon", { id: "a" }],
     ["set_window_title_mode", { mode: "pageTitle" }],
+    ["set_app_muted", { id: "a", muted: true }],
   ]);
 });
