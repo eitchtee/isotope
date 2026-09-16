@@ -1,3 +1,4 @@
+pub mod background;
 pub mod bridge;
 pub mod commands;
 pub mod host;
@@ -90,6 +91,7 @@ pub fn run() {
                 controller: Mutex::new(Controller::new(config, read_only)),
                 saver,
                 pending_toasts: Mutex::new(toasts),
+                background: Default::default(),
             });
 
             let window = WindowBuilder::new(app, "main")

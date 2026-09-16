@@ -140,6 +140,10 @@
         {#if errors.timeoutMinutes}<small class="error">{errors.timeoutMinutes}</small>{/if}
       </div>
       <label class="check"><input type="checkbox" bind:checked={form.startHibernated} /> Start hibernated</label>
+      <label class="check">
+        <input type="checkbox" bind:checked={form.suspendInBackground} /> Freeze while in the background
+      </label>
+      <small>Saves memory, but frozen apps get no notifications or unread counts until you open them.</small>
     </fieldset>
 
     <label class="check"><input type="checkbox" bind:checked={form.notifications} /> Show notifications</label>

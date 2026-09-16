@@ -12,6 +12,7 @@ export function app(id: string, overrides: Partial<App> = {}): App {
     hibernation: { enabled: true, timeoutMinutes: 10, startHibernated: false },
     notifications: true,
     badges: true,
+    suspendInBackground: false,
     ...overrides,
   };
 }

@@ -35,6 +35,8 @@ pub struct NewApp {
     pub hibernation: HibernationConfig,
     pub notifications: bool,
     pub badges: bool,
+    #[serde(default)]
+    pub suspend_in_background: bool,
 }
 
 impl NewApp {
@@ -50,6 +52,7 @@ impl NewApp {
             hibernation: self.hibernation,
             notifications: self.notifications,
             badges: self.badges,
+            suspend_in_background: self.suspend_in_background,
         }
     }
 }

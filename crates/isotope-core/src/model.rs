@@ -47,6 +47,9 @@ pub struct App {
     pub hibernation: HibernationConfig,
     pub notifications: bool,
     pub badges: bool,
+    /// Freeze the page while it's in the background (no scripts, notifications or badges).
+    #[serde(default)]
+    pub suspend_in_background: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

@@ -24,6 +24,15 @@ fn serializes_camel_case_and_tagged_sidebar_items() {
 
     let json = serde_json::to_value(&c).unwrap();
 
+    let app: App = serde_json::from_value(serde_json::json!({
+        "id": "a", "name": "A", "url": "https://a.example.com", "icon": null, "profileId": "default",
+        "userAgent": null, "allowedDomains": [], "notifications": true, "badges": true,
+        "hibernation": { "enabled": true, "timeoutMinutes": 10, "startHibernated": false },
+        "suspendInBackground": true
+    }))
+    .unwrap();
+    assert!(app.suspend_in_background);
+
     assert_eq!(json["sidebar"][0], serde_json::json!({ "type": "folder", "id": "f1" }));
     assert_eq!(json["sidebar"][1], serde_json::json!({ "type": "app", "id": "a1" }));
     assert_eq!(json["settings"]["lastActiveAppId"], "a1");
@@ -66,6 +75,7 @@ fn parses_and_round_trips_the_spec_example() {
     assert_eq!(c.apps[0].profile_id, "default");
     assert_eq!(c.apps[0].allowed_domains, vec!["login.microsoftonline.com".to_string()]);
     assert_eq!(c.apps[0].hibernation.timeout_minutes, 10);
+    assert!(!c.apps[0].suspend_in_background, "missing field defaults to off");
     assert_eq!(c.folders[0].app_ids, vec!["a1".to_string()]);
 
     let again: Config = serde_json::from_str(&serde_json::to_string(&c).unwrap()).unwrap();

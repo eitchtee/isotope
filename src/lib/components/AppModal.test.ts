@@ -89,6 +89,18 @@ test("adding an app sends a NewApp and closes", async () => {
   expect(onclose).toHaveBeenCalledOnce();
 });
 
+test("freeze while in the background is sent with the app", async () => {
+  const { calls } = setup({ edit: true });
+  const checkbox = screen.getByRole("checkbox", { name: /Freeze while in the background/ });
+  expect(checkbox).not.toBeChecked();
+
+  await fireEvent.click(checkbox);
+  await fireEvent.click(screen.getByRole("button", { name: "Save" }));
+  await flush();
+
+  expect(calls.find(([cmd]) => cmd === "update_app")?.[1].input.suspendInBackground).toBe(true);
+});
+
 test("editing keeps the existing icon value", async () => {
   const { calls, onclose } = setup({ edit: true });
 

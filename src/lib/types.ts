@@ -17,6 +17,8 @@ export type App = {
   hibernation: HibernationConfig;
   notifications: boolean;
   badges: boolean;
+  /** Freeze the page while it's in the background (no notifications or badge updates). */
+  suspendInBackground: boolean;
 };
 
 export type NewApp = Omit<App, "id">;

@@ -15,6 +15,7 @@ use tauri::{
 use tauri_plugin_notification::NotificationExt;
 use tauri_plugin_opener::OpenerExt;
 
+use crate::background;
 use crate::layout::content_bounds;
 use crate::paths;
 use crate::saver::Saver;
@@ -24,6 +25,7 @@ pub struct Shared {
     pub saver: Saver,
     /// Toasts raised before the shell was listening (e.g. config recovery).
     pub pending_toasts: Mutex<Vec<Toast>>,
+    pub background: crate::background::BackgroundApps,
 }
 
 static POPUPS: AtomicUsize = AtomicUsize::new(0);
@@ -58,6 +60,7 @@ pub fn apply(handle: &AppHandle, outcome: Outcome) {
                 if let Some(webview) = handle.get_webview(&app_label(id)) {
                     let _ = webview.close();
                 }
+                handle.state::<Shared>().background.forget(id);
             }
             // Visibility is derived from controller state in `layout`.
             Effect::Show(_) | Effect::Hide(_) => {}
@@ -108,7 +111,11 @@ pub fn layout(handle: &AppHandle) {
     let Some(window) = handle.get_window("main") else { return };
     let Ok(physical) = window.inner_size() else { return };
     let size = physical.to_logical::<f64>(window.scale_factor().unwrap_or(1.0));
-    let (active, view) = with_controller(handle, |c| (c.active().map(str::to_owned), c.view()));
+    let (active, view, suspended) = with_controller(handle, |c| {
+        let suspended: std::collections::HashSet<String> =
+            c.config().apps.iter().filter(|a| a.suspend_in_background).map(|a| a.id.clone()).collect();
+        (c.active().map(str::to_owned), c.view(), suspended)
+    });
     let bounds = content_bounds(size.width, size.height, view);
 
     for webview in window.webviews() {
@@ -120,8 +127,16 @@ pub fn layout(handle: &AppHandle) {
         let Some(app_id) = webview.label().strip_prefix("app-") else { continue };
         let _ = webview.set_position(LogicalPosition::new(bounds.x, bounds.y));
         let _ = webview.set_size(LogicalSize::new(bounds.width, bounds.height));
-        let visible = active.as_deref() == Some(app_id) && !view.overlay_open;
+        // An app hidden only by a shell overlay is still the foreground app: don't trim or freeze it.
+        let foreground = active.as_deref() == Some(app_id);
+        if foreground {
+            background::leave(handle, &webview, app_id);
+        }
+        let visible = foreground && !view.overlay_open;
         let _ = if visible { webview.show() } else { webview.hide() };
+        if !foreground {
+            background::enter(handle, &webview, app_id, suspended.contains(app_id));
+        }
     }
 }
 

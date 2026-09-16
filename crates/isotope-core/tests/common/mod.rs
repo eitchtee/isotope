@@ -14,6 +14,7 @@ pub fn new_app(name: &str) -> NewApp {
         hibernation: HibernationConfig { enabled: true, timeout_minutes: 10, start_hibernated: false },
         notifications: true,
         badges: true,
+        suspend_in_background: false,
     }
 }
 

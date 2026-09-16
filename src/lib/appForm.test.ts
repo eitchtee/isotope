@@ -23,6 +23,7 @@ test("new app form uses the defaults", () => {
     startHibernated: false,
     notifications: true,
     badges: true,
+    suspendInBackground: false,
   });
 });
 
@@ -32,6 +33,7 @@ test("edit form round-trips an app into the same NewApp", () => {
     userAgent: "UA",
     allowedDomains: ["login.microsoftonline.com", "okta.com"],
     hibernation: { enabled: false, timeoutMinutes: 3, startHibernated: true },
+    suspendInBackground: true,
   });
   const form = formFromApp(existing, { profileId: "default", timeoutMinutes: 10 });
 

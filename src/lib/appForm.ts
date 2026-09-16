@@ -12,6 +12,7 @@ export type AppForm = {
   startHibernated: boolean;
   notifications: boolean;
   badges: boolean;
+  suspendInBackground: boolean;
 };
 
 export type AppFormErrors = { name?: string; url?: string; timeoutMinutes?: string };
@@ -41,6 +42,7 @@ export function formFromApp(app: App | undefined, defaults: { profileId: string;
     startHibernated: app?.hibernation.startHibernated ?? false,
     notifications: app?.notifications ?? true,
     badges: app?.badges ?? true,
+    suspendInBackground: app?.suspendInBackground ?? false,
   };
 }
 
@@ -74,6 +76,7 @@ export function validateAppForm(form: AppForm, icon: string | null): { input: Ne
       },
       notifications: form.notifications,
       badges: form.badges,
+      suspendInBackground: form.suspendInBackground,
     },
   };
 }
